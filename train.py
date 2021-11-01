@@ -18,24 +18,27 @@ from unet import UNet
 os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 os.environ["WANDB_MODE"] = "disabled"
 
-
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
 data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
-dir_checkpoint = Path('./checkpoints/')
+
+
+# dir_checkpoint = Path('./checkpoints/')
+
 
 # torch.manual_seed(42)
 
 
 def train_net(net,
               device,
+              dir_checkpoint: str = './checkpoints/',
               epochs: int = 5,
               batch_size: int = 1,
               learning_rate: float = 0.001,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
               img_scale: float = 0.5,
-              amp: bool = False):
+              amp: bool = False, ):
     # 1. Create dataset
     # try:
     #     dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
@@ -176,6 +179,7 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
+    parser.add_argument('--save_dir', '-sd', type=str, default=False, help='Weights saving path (in ./checkpoints/)')
 
     return parser.parse_args()
 
@@ -205,6 +209,7 @@ if __name__ == '__main__':
     try:
         train_net(net=net,
                   epochs=args.epochs,
+                  dir_checkpoint=args.save_dir,
                   batch_size=args.batch_size,
                   learning_rate=args.lr,
                   device=device,
