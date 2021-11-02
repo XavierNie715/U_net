@@ -15,8 +15,11 @@ from tqdm import tqdm
 from utils.data_loading import BasicDataset
 from unet import UNet
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = '1'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+# os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
+print(torch.cuda.is_available(), torch.cuda.device_count())
+for i in range(torch.cuda.device_count()):
+    print(torch.cuda.get_device_name(i))
 os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
@@ -129,6 +132,9 @@ def train_net(net,
                     for tag, value in net.named_parameters():
                         tag = tag.replace('/', '.')
                         histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                        print(f'gradient: {value.grad.data.cpu()},'
+                              f'\nmax: {value.grad.data.cpu().max()}'
+                              f'\nmin: {value.grad.data.cpu().min()}')
                         histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
                     # val_score = evaluate(net, val_loader, device)
@@ -164,7 +170,7 @@ def train_net(net,
                     })
 
         if save_checkpoint:
-            dir_checkpoint = Path('./checkpoints/' / dir_checkpoint)
+            dir_checkpoint = Path('./checkpoints/' + str(dir_checkpoint))
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(),
                        str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
@@ -197,7 +203,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=2, n_classes=1, bilinear=True)
+    net = UNet(n_channels=2, n_classes=1, bilinear=False)
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
@@ -218,7 +224,8 @@ if __name__ == '__main__':
                   device=device,
                   img_scale=args.scale,
                   val_percent=args.val / 100,
-                  amp=args.amp)
+                  amp=args.amp
+                  )
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
         logging.info('Saved interrupt')
