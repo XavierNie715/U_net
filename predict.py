@@ -12,36 +12,22 @@ from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
 
+
 def predict_img(net,
                 full_img,
                 device,
                 scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-    img = torch.from_numpy(BasicDataset.preprocess(full_img, scale_factor, is_mask=False))
-    img = img.unsqueeze(0)
+    img = torch.from_numpy(np.load(full_img))
+    # img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
+    input_data = img[:, :, :2].reshape(2, img.shape[0], img.shape[1])
 
     with torch.no_grad():
-        output = net(img)
+        output = net(input_data)
 
-        if net.n_classes > 1:
-            probs = F.softmax(output, dim=1)[0]
-        else:
-            probs = torch.sigmoid(output)[0]
-
-        tf = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((full_img.size[1], full_img.size[0])),
-            transforms.ToTensor()
-        ])
-
-        full_mask = tf(probs.cpu()).squeeze()
-
-    if net.n_classes == 1:
-        return (full_mask > out_threshold).numpy()
-    else:
-        return F.one_hot(full_mask.argmax(dim=0), net.n_classes).permute(2, 0, 1).numpy()
+    return output.numpy()
 
 
 def get_args():
@@ -81,7 +67,7 @@ if __name__ == '__main__':
     in_files = args.input
     out_files = get_output_filenames(args)
 
-    net = UNet(n_channels=3, n_classes=2)
+    net = UNet(n_channels=2, n_classes=1)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')
@@ -94,7 +80,7 @@ if __name__ == '__main__':
 
     for i, filename in enumerate(in_files):
         logging.info(f'\nPredicting image {filename} ...')
-        img = Image.open(filename)
+        img = np.load(filename)
 
         mask = predict_img(net=net,
                            full_img=img,
@@ -102,12 +88,15 @@ if __name__ == '__main__':
                            out_threshold=args.mask_threshold,
                            device=device)
 
-        if not args.no_save:
-            out_filename = out_files[i]
-            result = mask_to_image(mask)
-            result.save(out_filename)
-            logging.info(f'Mask saved to {out_filename}')
+        print(mask.shape)
 
-        if args.viz:
-            logging.info(f'Visualizing results for image {filename}, close to continue...')
-            plot_img_and_mask(img, mask)
+
+        # if not args.no_save:
+        #     out_filename = out_files[i]
+        #     result = mask_to_image(mask)
+        #     result.save(out_filename)
+        #     logging.info(f'Mask saved to {out_filename}')
+        #
+        # if args.viz:
+        #     logging.info(f'Visualizing results for image {filename}, close to continue...')
+        #     plot_img_and_mask(img, mask)
