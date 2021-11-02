@@ -103,7 +103,7 @@ class BasicDataset(Dataset):
 
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': mask.permute(-1, data.shape[0], data.shape[1])  # T
+            'mask': mask.reshape(-1, data.shape[0], data.shape[1])  # T
         }
 
         # class CarvanaDataset(BasicDataset):
