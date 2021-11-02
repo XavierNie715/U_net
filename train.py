@@ -15,8 +15,9 @@ from tqdm import tqdm
 from utils.data_loading import BasicDataset
 from unet import UNet
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
-os.environ["WANDB_MODE"] = "disabled"
+# os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
+os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
@@ -163,7 +164,7 @@ def train_net(net,
                     })
 
         if save_checkpoint:
-            dir_checkpoint = Path('./checkpoints/' + dir_checkpoint)
+            dir_checkpoint = Path('./checkpoints/' / dir_checkpoint)
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(),
                        str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))

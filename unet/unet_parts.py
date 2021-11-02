@@ -14,11 +14,13 @@ class DoubleConv(nn.Module):
             mid_channels = out_channels
         self.double_conv = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=True),
+            # nn.BatchNorm2d(mid_channels),
+            nn.InstanceNorm2d(mid_channels),
+            nn.LeakyReLU(inplace=True),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            # nn.BatchNorm2d(out_channels),
+            nn.InstanceNorm2d(mid_channels),
+            nn.LeakyReLU(inplace=True)
         )
 
     def forward(self, x):
@@ -71,10 +73,14 @@ class Up(nn.Module):
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.out = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1),
+            nn.InstanceNorm2d(1),
+            nn.Tanh()
+        )
 
     def forward(self, x):
-        return self.conv(x)
+        return self.out(x)
 
 # class OutConv(nn.Module):
 #     def __init__(self, in_channels, out_channels):

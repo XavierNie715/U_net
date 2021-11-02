@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.nn as nn
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -96,9 +97,13 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         name = self.ids[idx]
         data = torch.as_tensor(np.load(name))
+        T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])  # N,C,H,W
+        InstanceNorm = nn.InstanceNorm2d(1)
+        mask = InstanceNorm(T)
+
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': data[:, :, 3].reshape(-1, data.shape[0], data.shape[1])  # T
+            'mask': mask.reshape[-1, data.shape[0], data.shape[1]]  # T
         }
 
         # class CarvanaDataset(BasicDataset):
