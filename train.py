@@ -132,9 +132,9 @@ def train_net(net,
                     for tag, value in net.named_parameters():
                         tag = tag.replace('/', '.')
                         histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                        print(f'gradient: {value.grad.data.cpu()},'
-                              f'\nmax: {value.grad.data.cpu().max()}'
-                              f'\nmin: {value.grad.data.cpu().min()}')
+                        # print(f'gradient: {value.grad.data.cpu()},'
+                        #       f'\nmax: {value.grad.data.cpu().max()}'
+                        #       f'\nmin: {value.grad.data.cpu().min()}')
                         histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
                     # val_score = evaluate(net, val_loader, device)
@@ -170,10 +170,10 @@ def train_net(net,
                     })
 
         if save_checkpoint:
-            dir_checkpoint = Path('./checkpoints/' + str(dir_checkpoint))
+            dir_checkpoint = './checkpoints/' + str(dir_checkpoint)
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             torch.save(net.state_dict(),
-                       str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
+                       str(dir_checkpoint + 'checkpoint_epoch{}.pth'.format(epoch + 1)))
             logging.info(f'Checkpoint {epoch + 1} saved!')
 
 
