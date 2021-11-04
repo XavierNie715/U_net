@@ -80,7 +80,7 @@ def train_net(net,
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
+    optimizer = optim.adam(net.parameters(), lr=learning_rate)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
@@ -170,8 +170,8 @@ def train_net(net,
                     })
 
         if save_checkpoint:
-            dir_checkpoint = './checkpoints/' + dir_checkpoint
-            torch.save(net.state_dict(), dir_checkpoint + 'checkpoint_epoch{}.pth'.format(epoch + 1))
+            dir = './checkpoints/' + dir_checkpoint
+            torch.save(net.state_dict(), dir + 'checkpoint_epoch{}.pth'.format(epoch + 1))
             logging.info(f'Checkpoint {epoch + 1} saved!')
 
 
