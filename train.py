@@ -80,11 +80,12 @@ def train_net(net,
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.adam(net.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss()
     global_step = 0
 
     # 5. Begin training
