@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
@@ -12,6 +13,8 @@ from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
 
+import matplotlib.pyplot as plt
+
 
 def predict_img(net,
                 full_img,
@@ -19,15 +22,12 @@ def predict_img(net,
                 scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-    img = torch.from_numpy(np.load(full_img))
-    # img = img.unsqueeze(0)
-    img = img.to(device=device, dtype=torch.float32)
-    input_data = img[:, :, :2].reshape(2, img.shape[0], img.shape[1])
+
 
     with torch.no_grad():
         output = net(input_data)
 
-    return output.numpy()
+    return output.cpu().numpy()
 
 
 def get_args():
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     in_files = args.input
     out_files = get_output_filenames(args)
 
-    net = UNet(n_channels=2, n_classes=1)
+    net = UNet(n_channels=2, n_classes=1, bilinear=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')
@@ -80,16 +80,34 @@ if __name__ == '__main__':
 
     for i, filename in enumerate(in_files):
         logging.info(f'\nPredicting image {filename} ...')
-        img = np.load(filename)
+
+        img = torch.from_numpy(np.load(filename))
+        img = img.to(device=device, dtype=torch.float32)
+        input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
+        mask_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
+        InstanceNorm = nn.InstanceNorm2d(1)
+        mask_true = InstanceNorm(mask_true).cpu().numpy()
 
         mask = predict_img(net=net,
-                           full_img=img,
+                           full_img=input_data,
                            scale_factor=args.scale,
                            out_threshold=args.mask_threshold,
                            device=device)
 
         print(mask.shape)
+        np.save('./result.npy', mask)
 
+        ax1 = plt.subplot(1, 2, 1)
+        plt.title('Pred')
+        plt.imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        plt.colorbar()
+
+        ax2 = plt.subplot(1, 2, 2)
+        plt.title('GT')
+        plt.imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        plt.colorbar()
+
+        plt.savefig("reslut.png", dpi=300)
 
         # if not args.no_save:
         #     out_filename = out_files[i]
