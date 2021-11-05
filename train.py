@@ -24,8 +24,8 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
-
+# data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
+data_dir = './data/220mm'
 
 # dir_checkpoint = Path('./checkpoints/')
 
@@ -84,8 +84,9 @@ def train_net(net,
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
-    # criterion = nn.MSELoss()
-    criterion = nn.SmoothL1Loss()
+    criterion = nn.MSELoss()
+    # criterion = nn.SmoothL1Loss()
+    criterion_MSE = nn.MSELoss()
     global_step = 0
 
     # 5. Begin training
@@ -154,7 +155,7 @@ def train_net(net,
                             # predict the mask
                             mask_pred = net(batch_data)
                     net.train()
-                    val_MSE = criterion(mask_pred, mask_true)
+                    val_MSE = criterion_MSE(mask_pred, mask_true)
 
                     logging.info('Validation MSE: {}'.format(val_MSE))
                     experiment.log({
