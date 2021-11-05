@@ -23,7 +23,6 @@ def predict_img(net,
                 out_threshold=0.5):
     net.eval()
 
-
     with torch.no_grad():
         output = net(input_data)
 
@@ -95,19 +94,21 @@ if __name__ == '__main__':
                            device=device)
 
         print(mask.shape)
-        np.save('./result.npy', mask)
+
+        sv_name = filename.split('.')[0]
+        np.save(sv_name + '.npy', mask)
 
         ax1 = plt.subplot(1, 2, 1)
-        plt.title('Pred')
-        plt.imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
-        plt.colorbar()
+        ax1.title('Pred')
+        ax1.imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
         ax2 = plt.subplot(1, 2, 2)
-        plt.title('GT')
-        plt.imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
-        plt.colorbar()
+        ax2.title('GT')
+        ax2.imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
-        plt.savefig("reslut.png", dpi=300)
+        plt.colorbar(ax2)
+
+        plt.savefig(sv_name + '.png', dpi=300)
 
         # if not args.no_save:
         #     out_filename = out_files[i]

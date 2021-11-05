@@ -88,11 +88,13 @@ def train_net(net,
     # criterion = nn.SmoothL1Loss()
     criterion_MSE = nn.MSELoss()
     global_step = 0
+    global_MSE = {}
 
     # 5. Begin training
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
+        epoch_val_MSE = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
@@ -107,10 +109,6 @@ def train_net(net,
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
-                    # loss = criterion(masks_pred, true_masks) \ # 原U_Net多了一项dice_loss
-                    #        + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                    #                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                    #                    multiclass=True)
                     loss = criterion(masks_pred, true_masks)
 
                 optimizer.zero_grad(set_to_none=True)
@@ -128,48 +126,52 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                # Evaluation round
-                if global_step % (n_train // (10 * batch_size)) == 0:
-                    histograms = {}
-                    for tag, value in net.named_parameters():
-                        tag = tag.replace('/', '.')
-                        histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                        # print(f'gradient: {value.grad.data.cpu()},'
-                        print(f'\nMaxGradient: {value.grad.data.cpu().max()}'
-                              f'\nMinGradient: {value.grad.data.cpu().min()}')
-                        histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+        # Evaluation round
+        # if global_step % (n_train // (10 * batch_size)) == 0:
+        histograms = {}
+        for tag, value in net.named_parameters():
+            tag = tag.replace('/', '.')
+            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+            # print(f'gradient: {value.grad.data.cpu()},'
+            # print(f'\nMaxGradient: {value.grad.data.cpu().max()}'
+            #       f'\nMinGradient: {value.grad.data.cpu().min()}')
+            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                    # val_score = evaluate(net, val_loader, device)
-                    # scheduler.step(val_score)
-                    net.eval()
-                    num_val_batches = len(val_loader)
-                    # iterate over the validation set
-                    for batch in tqdm(val_loader, total=num_val_batches, desc='validation round', unit='batch',
-                                      leave=False):
-                        batch_data, mask_true = batch['image'], batch['mask']
-                        # move images and labels to correct device and type
-                        batch_data = batch_data.to(device=device, dtype=torch.float32)
-                        mask_true = mask_true.to(device=device, dtype=torch.float32)
+        net.eval()
+        num_val_batches = len(val_loader)
+        # iterate over the validation set
+        for batch in tqdm(val_loader, total=num_val_batches, desc='validation round', unit='batch',
+                          leave=False):
+            batch_data, mask_true = batch['image'], batch['mask']
+            # move images and labels to correct device and type
+            batch_data = batch_data.to(device=device, dtype=torch.float32)
+            mask_true = mask_true.to(device=device, dtype=torch.float32)
 
-                        with torch.no_grad():
-                            # predict the mask
-                            mask_pred = net(batch_data)
-                    net.train()
-                    val_MSE = criterion_MSE(mask_pred, mask_true)
+            with torch.no_grad():
+                # predict the mask
+                mask_pred = net(batch_data)
+                val_MSE = criterion_MSE(mask_pred, mask_true)
+            epoch_val_MSE += val_MSE.item() / num_val_batches  # average single MSE for each epoch
 
-                    logging.info('Validation MSE: {}'.format(val_MSE))
-                    experiment.log({
-                        'learning rate': optimizer.param_groups[0]['lr'],
-                        'validation MSE': val_MSE,
-                        'images': wandb.Image(images[0].cpu()),
-                        'masks': {
-                            'true': wandb.Image(true_masks[0].float().cpu()),
-                            'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0].float().cpu()),
-                        },
-                        'step': global_step,
-                        'epoch': epoch,
-                        **histograms
-                    })
+        net.train()
+
+        global_MSE[epoch + 1] = epoch_val_MSE
+        logging.info('Validation MSE: {}'.format(epoch_val_MSE))
+        logging.info('Epoch Loss: {}'.format(epoch_loss))
+        logging.info('Current Minimum MSE: {}, in epoch {}'.format(min(global_MSE.values()),
+                                                                   min(global_MSE, key=global_MSE.get)))
+        experiment.log({
+            'learning rate': optimizer.param_groups[0]['lr'],
+            'validation MSE': epoch_val_MSE,
+            # 'images': wandb.Image(images[0].cpu()),
+            # 'masks': {
+            #     'true': wandb.Image(true_masks[0].float().cpu()),
+            #     'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0].float().cpu()),
+            # },
+            'step': global_step,
+            'epoch': epoch,
+            **histograms
+        })
 
         if save_checkpoint:
             dir = './checkpoints/' + dir_checkpoint
