@@ -61,7 +61,7 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', name=dir_checkpoint)
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
@@ -174,7 +174,7 @@ def train_net(net,
 
         if save_checkpoint:
             dir = './checkpoints/' + dir_checkpoint
-            torch.save(net.state_dict(), dir + 'checkpoint_epoch{}.pth'.format(epoch + 1))
+            torch.save(net.state_dict(), dir + '/checkpoint_epoch{}.pth'.format(epoch + 1))
             logging.info(f'Checkpoint {epoch + 1} saved!')
 
 
@@ -189,7 +189,9 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
-    parser.add_argument('--save_dir', '-sd', type=str, default=False, help='Weights saving path (in ./checkpoints/)')
+    parser.add_argument('--save_dir', '-sd', type=str, default=False,
+                        help='Weights saving path (in ./checkpoints/), also wandb run name')
+    # parser.add_argument("--name", type=str, help="The wandb run name", default=None)
 
     return parser.parse_args()
 

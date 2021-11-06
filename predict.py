@@ -33,7 +33,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
     parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
                         help='Specify the file in which the model is stored')
-    parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
+    parser.add_argument('--input', '-i', metavar='INPUT', help='Filenames of input images', required=True)
     parser.add_argument('--output', '-o', metavar='INPUT', nargs='+', help='Filenames of output images')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
@@ -62,17 +62,21 @@ def mask_to_image(mask: np.ndarray):
 
 
 """
-srun -p gpu_2080Ti -w node11 python predict.py --model /public/home/lcc-dx07/UNet/checkpoints/SELU_noIN_lr1e-5_b1_mse_small/checkpoint_epoch18.pth --input ./data/val
+srun -p gpu_2080Ti -w node11 python predict.py --model /public/home/lcc-dx07/UNet/checkpoints/SELU_noIN_lr1e-5_b1_mse_small/checkpoint_epoch18.pth --input ./data/val/
 """
 
 if __name__ == '__main__':
     args = get_args()
-    in_files = args.input
+    in_files = str(args.input)
+    # print(in_files)
     sv_dir = os.path.dirname(args.model)
-    out_dir = sv_dir + '/results_' + args.model.split('.')[:-1].split('_')[-1]
-    net = UNet(n_channels=2, n_classes=1, bilinear=False)
+    out_dir = sv_dir + '/results_' + args.model.split('.')[-2].split('_')[-1]
+    if os.path.exists(out_dir) == False:
+        os.mkdir(out_dir)
 
+    net = UNet(n_channels=2, n_classes=1, bilinear=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     logging.info(f'Loading model {args.model}')
     logging.info(f'Using device {device}')
 
@@ -84,7 +88,7 @@ if __name__ == '__main__':
     for filename in os.listdir(in_files):
         logging.info(f'\nPredicting image {filename} ...')
 
-        img = torch.from_numpy(np.load(filename))
+        img = torch.from_numpy(np.load(in_files + filename))
         img = img.to(device=device, dtype=torch.float32)
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
         mask_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
@@ -96,8 +100,6 @@ if __name__ == '__main__':
                            scale_factor=args.scale,
                            out_threshold=args.mask_threshold,
                            device=device)
-
-        print(mask.shape)
 
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
         np.save(sv_name + '.npy', mask)
