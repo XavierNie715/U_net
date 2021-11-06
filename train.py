@@ -24,8 +24,8 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-# data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
-data_dir = './data/220mm'
+data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
+# data_dir = './data/220mm'
 
 # dir_checkpoint = Path('./checkpoints/')
 
@@ -54,7 +54,6 @@ def train_net(net,
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(42))
-    # train_set, val_set = random_split(dataset, [n_train, n_val])
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
@@ -122,7 +121,7 @@ def train_net(net,
                 experiment.log({
                     'train loss': loss.item(),
                     'step': global_step,
-                    'epoch': epoch
+                    'epoch': epoch + 1
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
@@ -169,7 +168,7 @@ def train_net(net,
             #     'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0].float().cpu()),
             # },
             'step': global_step,
-            'epoch': epoch,
+            'epoch': epoch + 1,
             **histograms
         })
 

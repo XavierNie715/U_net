@@ -61,11 +61,15 @@ def mask_to_image(mask: np.ndarray):
         return Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8))
 
 
+"""
+srun -p gpu_2080Ti -w node11 python predict.py --model /public/home/lcc-dx07/UNet/checkpoints/SELU_noIN_lr1e-5_b1_mse_small/checkpoint_epoch18.pth --input ./data/val
+"""
+
 if __name__ == '__main__':
     args = get_args()
     in_files = args.input
-    out_files = get_output_filenames(args)
-
+    sv_dir = os.path.dirname(args.model)
+    out_dir = sv_dir + '/results_' + args.model.split('.')[:-1].split('_')[-1]
     net = UNet(n_channels=2, n_classes=1, bilinear=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -77,7 +81,7 @@ if __name__ == '__main__':
 
     logging.info('Model loaded!')
 
-    for i, filename in enumerate(in_files):
+    for filename in os.listdir(in_files):
         logging.info(f'\nPredicting image {filename} ...')
 
         img = torch.from_numpy(np.load(filename))
@@ -95,18 +99,20 @@ if __name__ == '__main__':
 
         print(mask.shape)
 
-        sv_name = filename.split('.')[0]
+        sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
         np.save(sv_name + '.npy', mask)
 
-        ax1 = plt.subplot(1, 2, 1)
-        ax1.title('Pred')
-        ax1.imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        fig, ax = plt.subplots(1, 2)
+        ax = ax.flatten()
 
-        ax2 = plt.subplot(1, 2, 2)
-        ax2.title('GT')
-        ax2.imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        ax[0].set_title('Pred')
+        ax1 = ax[0].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
-        plt.colorbar(ax2)
+        ax[1].set_title('GT')
+        ax2 = ax[1].imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+
+        fig.colorbar(ax2)
+        plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1)
 
         plt.savefig(sv_name + '.png', dpi=300)
 
