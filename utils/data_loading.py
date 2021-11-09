@@ -4,10 +4,12 @@ from os.path import splitext
 from pathlib import Path
 
 import numpy as np
+
 import torch
 import torch.nn as nn
-from PIL import Image
 from torch.utils.data import Dataset
+
+from scipy import ndimage
 
 
 class BasicDataset(Dataset):
@@ -98,12 +100,17 @@ class BasicDataset(Dataset):
         name = self.ids[idx]
         data = torch.as_tensor(np.load(name))
         T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])  # N,C,H,W
+        # data.shape[0]: 789, data.shape[1]: 113
         InstanceNorm = nn.InstanceNorm2d(1)
-        mask = InstanceNorm(T)
+        T_std = InstanceNorm(T)
+        T_gs_std = ndimage.filters.gaussian_filter(T_std.reshape([data.shape[0],
+                                                                  data.shape[1],
+                                                                  1]),
+                                                   sigma=20)
 
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': mask.reshape(-1, data.shape[0], data.shape[1])  # T
+            'mask': T_gs_std.reshape(-1, data.shape[0], data.shape[1])  # T
         }
 
         # class CarvanaDataset(BasicDataset):
