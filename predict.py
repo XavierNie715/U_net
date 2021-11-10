@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 
+from scipy import ndimage
+
 from utils.data_loading import BasicDataset
 from unet import UNet
 from utils.utils import plot_img_and_mask
@@ -93,8 +95,11 @@ if __name__ == '__main__':
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
         mask_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
         InstanceNorm = nn.InstanceNorm2d(1)
-        mask_true = InstanceNorm(mask_true).cpu().numpy()
-
+        mask_true_std = InstanceNorm(mask_true).cpu().numpy()
+        mask_true_gs_std = ndimage.filters.gaussian_filter(mask_true_std.reshape([img.shape[0],
+                                                                                  img.shape[1],
+                                                                                  1]),
+                                                           sigma=20)
         mask = predict_img(net=net,
                            full_img=input_data,
                            scale_factor=args.scale,
@@ -111,7 +116,7 @@ if __name__ == '__main__':
         ax1 = ax[0].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
         ax[1].set_title('GT')
-        ax2 = ax[1].imshow(mask_true.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        ax2 = ax[1].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
         fig.colorbar(ax2)
         plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1)
