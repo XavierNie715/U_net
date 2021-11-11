@@ -82,6 +82,7 @@ class OutConv(nn.Module):
     def forward(self, x):
         return self.out(x)
 
+
 # class OutConv(nn.Module):
 #     def __init__(self, in_channels, out_channels):
 #         super(OutConv, self).__init__()
@@ -91,3 +92,18 @@ class OutConv(nn.Module):
 #             nn.ReLU(inplace=True),
 #             nn.Linear()
 #         )
+
+
+class RelativeL2Error(nn.Module):
+    """
+    input: tensor, output: single tensor value
+    if plot=Ture, then output: TENSOR (default plot=Faulse)
+    f: regressed value, g: reference value
+    Calculate relative l2 error between result and ground truth, see HFM paper
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, f, g, plot: bool = False):
+        return nn.MSELoss(f, g, reduction='none' if plot is True else 'mean') / nn.MSELoss(g, torch.mean(g))

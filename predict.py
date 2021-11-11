@@ -12,7 +12,7 @@ from torchvision import transforms
 from scipy import ndimage
 
 from utils.data_loading import BasicDataset
-from unet import UNet
+from unet import UNet, RelativeL2Error
 from utils.utils import plot_img_and_mask
 
 import matplotlib.pyplot as plt
@@ -68,6 +68,7 @@ srun -p gpu_2080Ti -w node11 python predict.py --model /public/home/lcc-dx07/UNe
 """
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
     in_files = str(args.input)
     # print(in_files)
@@ -78,6 +79,7 @@ if __name__ == '__main__':
 
     net = UNet(n_channels=2, n_classes=1, bilinear=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    val_criterion = RelativeL2Error()
 
     logging.info(f'Loading model {args.model}')
     logging.info(f'Using device {device}')
@@ -87,8 +89,11 @@ if __name__ == '__main__':
 
     logging.info('Model loaded!')
 
+    img_num = 1
+    val_error_total = 0
+
     for filename in os.listdir(in_files):
-        logging.info(f'\nPredicting image {filename} ...')
+        logging.info(f'\nProcessing image {img_num} / {len(os.listdir(in_files))} ...')
 
         img = torch.from_numpy(np.load(in_files + filename))
         img = img.to(device=device, dtype=torch.float32)
@@ -106,10 +111,14 @@ if __name__ == '__main__':
                            out_threshold=args.mask_threshold,
                            device=device)
 
+        val_error_plot = val_criterion(mask, mask_true_gs_std, plot=True)
+        val_error = val_error_plot.mean()
+        val_error_total += val_error.item()
+
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
         np.save(sv_name + '.npy', mask)
 
-        fig, ax = plt.subplots(1, 2)
+        fig, ax = plt.subplots(1, 3)
         ax = ax.flatten()
 
         ax[0].set_title('Pred')
@@ -119,16 +128,31 @@ if __name__ == '__main__':
         ax2 = ax[1].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
 
         fig.colorbar(ax2)
-        plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1)
+        # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
+
+        ax[2].set_title(f'Rel L2 error = {val_error.item()}')
+        ax[2].imshow(img.cpu().numpy()[:, :, 0])
+        ax[2].imshow(img.cpu().numpy()[:, :, 1])
+        ax3 = ax[2].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], alpha=0.4)
+        fig.colorbar(ax3)
 
         plt.savefig(sv_name + '.png', dpi=300)
 
-        # if not args.no_save:
-        #     out_filename = out_files[i]
-        #     result = mask_to_image(mask)
-        #     result.save(out_filename)
-        #     logging.info(f'Mask saved to {out_filename}')
-        #
-        # if args.viz:
-        #     logging.info(f'Visualizing results for image {filename}, close to continue...')
-        #     plot_img_and_mask(img, mask)
+        plt.close()
+
+        logging.info(f'\n{filename} saved! val_error = {val_error}')
+
+        img_num += 1
+
+    val_error_total_mean = val_error_total / len(os.listdir(in_files))
+    logging.info(f'\nFinish predict! Mean error = {val_error_total_mean}')
+
+    # if not args.no_save:
+    #     out_filename = out_files[i]
+    #     result = mask_to_image(mask)
+    #     result.save(out_filename)
+    #     logging.info(f'Mask saved to {out_filename}')
+    #
+    # if args.viz:
+    #     logging.info(f'Visualizing results for image {filename}, close to continue...')
+    #     plot_img_and_mask(img, mask)

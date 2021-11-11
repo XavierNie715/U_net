@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
-from unet import UNet
+from unet import UNet, RelativeL2Error
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 # os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
@@ -24,11 +24,7 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-data_dir = './data/220mm,./data/245mm,./data/275mm_1,./data/275mm_2'
-# data_dir = './data/220mm'
-
-# dir_checkpoint = Path('./checkpoints/')
-
+data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
 
 torch.manual_seed(42)
 
@@ -85,15 +81,15 @@ def train_net(net,
     # criterion = nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
     # criterion = nn.SmoothL1Loss()
-    criterion_MSE = nn.MSELoss()
+    val_criterion = RelativeL2Error()
     global_step = 0
-    global_MSE = {}
+    global_error = {}
 
     # 5. Begin training
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
-        epoch_val_MSE = 0
+        epoch_val_error = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
@@ -149,19 +145,19 @@ def train_net(net,
             with torch.no_grad():
                 # predict the mask
                 mask_pred = net(batch_data)
-                val_MSE = criterion_MSE(mask_pred, mask_true)
-            epoch_val_MSE += val_MSE.item() / num_val_batches  # average single MSE for each epoch
+                val_error = val_criterion(mask_pred, mask_true)
+            epoch_val_error += val_error.item() / num_val_batches  # average single error for each epoch
 
         net.train()
 
-        global_MSE[epoch + 1] = epoch_val_MSE
-        logging.info('Validation MSE: {}'.format(epoch_val_MSE))
+        global_error[epoch + 1] = epoch_val_error
+        logging.info('Validation MSE: {}'.format(epoch_val_error))
         logging.info('Epoch Loss: {}'.format(epoch_loss))
-        logging.info('Current Minimum MSE: {}, in epoch {}'.format(min(global_MSE.values()),
-                                                                   min(global_MSE, key=global_MSE.get)))
+        logging.info('Current Minimum Val Error: {}, in epoch {}'.format(min(global_error.values()),
+                                                                         min(global_error, key=global_error.get)))
         experiment.log({
             'learning rate': optimizer.param_groups[0]['lr'],
-            'validation MSE': epoch_val_MSE,
+            'validation Error': epoch_val_error,
             # 'images': wandb.Image(images[0].cpu()),
             # 'masks': {
             #     'true': wandb.Image(true_masks[0].float().cpu()),
@@ -191,6 +187,8 @@ def get_args():
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--save_dir', '-sd', type=str, default=False,
                         help='Weights saving path (in ./checkpoints/), also wandb run name')
+    parser.add_argument('--data_set', '-ds', type=int, default=None,
+                        help='select train dataset(which flame height), format like 1,2,3,4')
     # parser.add_argument("--name", type=str, help="The wandb run name", default=None)
 
     return parser.parse_args()
@@ -198,6 +196,11 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
+
+    dataset_split = args.data_set.split(',')
+    data_dir = []
+    data_dir.extend([(data_list[int(item)]) for item in dataset_split])
+    data_dir = ','.join(data_dir)
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
