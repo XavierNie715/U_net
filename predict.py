@@ -111,7 +111,7 @@ if __name__ == '__main__':
                            out_threshold=args.mask_threshold,
                            device=device)
 
-        val_error_plot = val_criterion(mask, mask_true_gs_std, reduction='none')
+        val_error_plot = val_criterion(mask, mask_true_gs_std, reduct='none')
         val_error = val_error_plot.mean()
         val_error_total += val_error.item()
 

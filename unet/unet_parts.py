@@ -105,5 +105,5 @@ class RelativeL2Error(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, f, g, reduction='mean'):
-        return F.mse_loss(f, g, reduction=reduction) / F.mse_loss(g, torch.mean(g))
+    def forward(self, f, g, reduct='mean'):
+        return F.mse_loss(f, g, reduction=reduct) / F.mse_loss(g, torch.mean(g))
