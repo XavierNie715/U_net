@@ -105,6 +105,7 @@ if __name__ == '__main__':
                                                                                   img.shape[1],
                                                                                   1]),
                                                            sigma=20)
+        mask_true_gs_std = torch.from_numpy(mask_true_gs_std).to(device)
         mask = predict_img(net=net,
                            full_img=input_data,
                            scale_factor=args.scale,
