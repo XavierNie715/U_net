@@ -76,7 +76,7 @@ class OutConv(nn.Module):
         self.out = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1),
             # nn.InstanceNorm2d(1),
-            nn.SELU()
+            # nn.SELU()
         )
 
     def forward(self, x):

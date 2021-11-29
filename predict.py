@@ -102,10 +102,10 @@ if __name__ == '__main__':
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
         mask_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
         InstanceNorm = nn.InstanceNorm2d(1)
-        mask_true_std = InstanceNorm(mask_true).cpu().numpy()
-        mask_true_gs_std = ndimage.filters.gaussian_filter(mask_true_std.reshape([img.shape[0],
-                                                                                  img.shape[1],
-                                                                                  1]),
+        # mask_true_std = InstanceNorm(mask_true).cpu().numpy()
+        mask_true_gs_std = ndimage.filters.gaussian_filter(mask_true.cpu().numpy().reshape([img.shape[0],
+                                                                                            img.shape[1],
+                                                                                            1]),
                                                            sigma=20)
 
         mask = predict_img(net=net,
