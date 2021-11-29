@@ -192,8 +192,8 @@ def get_args():
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--save_dir', '-sd', type=str, default=False,
                         help='Weights saving path (in ./checkpoints/), also wandb run name')
-    parser.add_argument('--data_set', '-ds', type=int, default=None,
-                        help='select train dataset(which flame height), format like 1,2,3,4')
+    parser.add_argument('--data_set', '-ds', type=str, default=None, nargs='+',
+                        help='select train dataset(which flame height), format like 1 2 3 4')
     # parser.add_argument("--name", type=str, help="The wandb run name", default=None)
 
     return parser.parse_args()
@@ -202,9 +202,9 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    dataset_split = args.data_set.split(',')
+    # dataset_split = args.data_set.split(',')
     data_dir = []
-    data_dir.extend([(data_list[int(item)]) for item in dataset_split])
+    data_dir.extend([(data_list[int(item) - 1]) for item in args.data_set])
     data_dir = ','.join(data_dir)
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
