@@ -90,6 +90,7 @@ def train_net(net,
         net.train()
         epoch_loss = 0
         epoch_val_error = 0
+        epoch_MSE_error = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
@@ -145,19 +146,23 @@ def train_net(net,
             with torch.no_grad():
                 # predict the mask
                 mask_pred = net(batch_data)
+                MSE_error = criterion(mask_pred, mask_true)
                 val_error = val_criterion(mask_pred, mask_true)
             epoch_val_error += val_error.item() / num_val_batches  # average single error for each epoch
+            epoch_MSE_error += MSE_error.item() / num_val_batches  # average single error for each epoch
 
         net.train()
 
         global_error[epoch + 1] = epoch_val_error
-        logging.info('Validation MSE: {}'.format(epoch_val_error))
+        logging.info('Relative L1 Error: {}'.format(epoch_val_error))
+        logging.info('Validation MSE: {}'.format(epoch_MSE_error))
         logging.info('Epoch Loss: {}'.format(epoch_loss))
         logging.info('Current Minimum Val Error: {}, in epoch {}'.format(min(global_error.values()),
                                                                          min(global_error, key=global_error.get)))
         experiment.log({
             'learning rate': optimizer.param_groups[0]['lr'],
             'validation Error': epoch_val_error,
+            'MSE Error': epoch_MSE_error,
             # 'images': wandb.Image(images[0].cpu()),
             # 'masks': {
             #     'true': wandb.Image(true_masks[0].float().cpu()),

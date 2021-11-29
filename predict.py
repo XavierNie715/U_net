@@ -16,6 +16,8 @@ from unet import UNet, RelativeL2Error
 from utils.utils import plot_img_and_mask
 
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors
 
 
 def predict_img(net,
@@ -105,39 +107,80 @@ if __name__ == '__main__':
                                                                                   img.shape[1],
                                                                                   1]),
                                                            sigma=20)
-        mask_true_gs_std = torch.from_numpy(mask_true_gs_std).to(device)
+
         mask = predict_img(net=net,
                            full_img=input_data,
                            scale_factor=args.scale,
                            out_threshold=args.mask_threshold,
                            device=device)
 
-        val_error_plot = val_criterion(mask, mask_true_gs_std, reduct='none')
+        # print('mask: ', torch.from_numpy(mask).to(device).size())
+        # print('mask_true_gs_std: ', torch.from_numpy(mask_true_gs_std).to(device).size())
+
+        OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+        SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+
+        val_error_plot = val_criterion(torch.from_numpy(mask).to(device),
+                                       torch.from_numpy(mask_true_gs_std).to(device).reshape(1, -1,
+                                                                                             mask.shape[2],
+                                                                                             mask.shape[3]),
+                                       reduct='none')
         val_error = val_error_plot.mean()
         val_error_total += val_error.item()
 
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
-        np.save(sv_name + '.npy', mask)
+        # np.save(sv_name + '.npy', mask)
 
-        fig, ax = plt.subplots(1, 3)
+        fig, ax = plt.subplots(1, 5)
         ax = ax.flatten()
 
-        ax[0].set_title('Pred')
-        ax1 = ax[0].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        ax[0].set_title('OH')
+        ax0 = ax[0].imshow(OH_std.reshape(img.shape[0], img.shape[1], -1))
 
-        ax[1].set_title('GT')
-        ax2 = ax[1].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+        ax[1].set_title('SVF')
+        ax1 = ax[1].imshow(SVF_std.reshape(img.shape[0], img.shape[1], -1))
 
-        fig.colorbar(ax2)
+        ax[2].set_title('GT')
+        ax2 = ax[2].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+
+        ax[3].set_title('Pred')
+        ax3 = ax[3].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cm.viridis)
+        fig.colorbar(ax3, ax=ax[3])
+
+        ax[4].set_title('L1_error')
+        ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
+                           cmap=cm.Reds)
+        fig.colorbar(ax4, ax=ax[4])
         # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
 
-        ax[2].set_title(f'Rel L2 error = {val_error.item()}')
-        ax[2].imshow(img.cpu().numpy()[:, :, 0])
-        ax[2].imshow(img.cpu().numpy()[:, :, 1])
-        ax3 = ax[2].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], alpha=0.4)
-        fig.colorbar(ax3)
+        # ax[2].imshow(img.cpu().numpy()[:, :, 0], cmap=cm.gray)
+        # # ax3.set_title(f'Rel L2 error = {val_error.item()}')
+        # ax[2].imshow(img.cpu().numpy()[:, :, 1], cmap=cm.jet)
+        # ax3 = ax[2].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], alpha=0.4)
+        # fig.colorbar(ax3)
 
-        plt.savefig(sv_name + '.png', dpi=300)
+        '''
+        trying to plot overlayed fig
+        
+        fig, ax = plt.subplots()
+        OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+        SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+
+        cmap1 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["black", "darkgreen"])
+        cmap2 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["black", "darkblue"])
+        cmap3 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["white", "red"])
+        ax1 = ax.imshow(OH_std.reshape(img.shape[0], img.shape[1], -1), cmap=cmap1, interpolation='bilinear',
+                        vmin=0, vmax=1)
+        ax2 = ax.imshow(SVF_std.reshape(img.shape[0], img.shape[1], -1), cmap=cmap2, alpha=0.4,
+                        interpolation='bilinear', vmin=0, vmax=1)
+
+        # ax3 = ax.imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cmap3, alpha=0.4,
+        #           interpolation='bilinear')
+        # fig.colorbar(ax3)
+        '''
+
+        # plt.show()
+        plt.savefig(sv_name + '.png', figsize=(24, 8), dpi=300)
 
         plt.close()
 
