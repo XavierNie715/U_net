@@ -135,10 +135,10 @@ if __name__ == '__main__':
         ax = ax.flatten()
 
         ax[0].set_title('OH')
-        ax0 = ax[0].imshow(OH_std.reshape(img.shape[0], img.shape[1], -1))
+        ax0 = ax[0].imshow(np.squeeze(OH_std))
 
         ax[1].set_title('SVF')
-        ax1 = ax[1].imshow(SVF_std.reshape(img.shape[0], img.shape[1], -1))
+        ax1 = ax[1].imshow(np.squeeze(SVF_std))
 
         ax[2].set_title('GT')
         ax2 = ax[2].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
@@ -180,7 +180,7 @@ if __name__ == '__main__':
         '''
 
         # plt.show()
-        plt.savefig(sv_name + '.png', figsize=(24, 8), dpi=300)
+        plt.savefig(sv_name + '.png', figsize=(24, 8), dpi=300, bbox_inches='tight')
 
         plt.close()
 
