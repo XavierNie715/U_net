@@ -40,18 +40,24 @@ def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_na
 
     ax[1].set_title('SVF')
     ax1 = ax[1].imshow(np.squeeze(SVF_std))
+    ax1.set_yticks([])
 
     ax[2].set_title('GT')
     ax2 = ax[2].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+    ax2.set_yticks([])
 
     ax[3].set_title('Pred')
     ax3 = ax[3].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cm.viridis)
+    ax3.set_yticks([])
     fig.colorbar(ax3, ax=ax[3])
 
     ax[4].set_title('L2_error')
     ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
                        cmap=cm.Reds)
-    fig.colorbar(ax4, ax=ax[4])
+    ax4.set_yticks([])
+    cb1 = fig.colorbar(ax4, ax=ax[4])
+    cb1.set_ticks([0, 0.25, 0.5, 0.75, 1])
+    cb1.update_ticks()
     # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
 
     # ax[2].imshow(img.cpu().numpy()[:, :, 0], cmap=cm.gray)
