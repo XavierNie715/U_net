@@ -56,9 +56,7 @@ def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_na
     ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
                        cmap=cm.Reds)
 
-    cb1 = fig.colorbar(ax4, ax=ax[4])
-    cb1.set_ticks([0, 0.25, 0.5, 0.75, 1])
-    cb1.update_ticks()
+    fig.colorbar(ax4, ax=ax[4])
     # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
 
     # ax[2].imshow(img.cpu().numpy()[:, :, 0], cmap=cm.gray)
