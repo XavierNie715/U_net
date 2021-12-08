@@ -39,22 +39,23 @@ def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_na
     ax0 = ax[0].imshow(np.squeeze(OH_std))
 
     ax[1].set_title('SVF')
+    ax[1].set_yticks([])
     ax1 = ax[1].imshow(np.squeeze(SVF_std))
-    ax1.set_yticks([])
 
     ax[2].set_title('GT')
+    ax[2].set_yticks([])
     ax2 = ax[2].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
-    ax2.set_yticks([])
 
     ax[3].set_title('Pred')
+    ax[3].set_yticks([])
     ax3 = ax[3].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cm.viridis)
-    ax3.set_yticks([])
     fig.colorbar(ax3, ax=ax[3])
 
     ax[4].set_title('L2_error')
+    ax[4].set_yticks([])
     ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
                        cmap=cm.Reds)
-    ax4.set_yticks([])
+
     cb1 = fig.colorbar(ax4, ax=ax[4])
     cb1.set_ticks([0, 0.25, 0.5, 0.75, 1])
     cb1.update_ticks()
