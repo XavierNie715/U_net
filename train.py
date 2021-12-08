@@ -154,7 +154,7 @@ def train_net(net,
         net.train()
 
         global_error[epoch + 1] = epoch_val_error
-        logging.info('Relative L1 Error: {}'.format(epoch_val_error))
+        logging.info('Relative L2 Error: {}'.format(epoch_val_error))
         logging.info('Validation MSE: {}'.format(epoch_MSE_error))
         logging.info('Epoch Loss: {}'.format(epoch_loss))
         logging.info('Current Minimum Val Error: {}, in epoch {}'.format(min(global_error.values()),
