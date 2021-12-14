@@ -195,4 +195,4 @@ if __name__ == '__main__':
                  f'mean_L2_error = {L2_error_total_mean}\n'
                  f'mean_MSE_error = {MSE_error_total_mean}\n'
                  f'mean_RMSE_error = {RMSE_error_total_mean}\n'
-                 f'mean_L2_error_mask = {L2_error_total_mean}')
+                 f'mean_L2_error_mask = {L2_error_mask_total_mean}')
