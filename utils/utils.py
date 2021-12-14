@@ -1,17 +1,12 @@
-import matplotlib.pyplot as plt
+import numpy as np
+from scipy import ndimage
 
 
-def plot_img_and_mask(img, mask):
-    classes = mask.shape[0] if len(mask.shape) > 2 else 1
-    fig, ax = plt.subplots(1, classes + 1)
-    ax[0].set_title('Input image')
-    ax[0].imshow(img)
-    if classes > 1:
-        for i in range(classes):
-            ax[i + 1].set_title(f'Output mask (class {i + 1})')
-            ax[i + 1].imshow(mask[:, :, i])
-    else:
-        ax[1].set_title(f'Output mask')
-        ax[1].imshow(mask)
-    plt.xticks([]), plt.yticks([])
-    plt.show()
+def threshold_mask(data, threshold_value=0.2, radius=50):
+    threshold = (data.max() - data.min()) * threshold_value
+    mask = np.ones(data.shape)
+    W = len(mask)
+    H = len(mask[0])
+    mask[mask * data < threshold] = 0
+    mask = ndimage.filters.maximum_filter(mask, radius)
+    return mask

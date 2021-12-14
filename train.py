@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
+from utils.utils import threshold_mask
 from unet import UNet, RelativeL2Error
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '1'
@@ -81,31 +82,32 @@ def train_net(net,
     # criterion = nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
     # criterion = nn.SmoothL1Loss()
-    val_criterion = RelativeL2Error()
+    L2_criterion = RelativeL2Error()
     global_step = 0
-    global_error = {}
+    global_L2_error = {}
 
     # 5. Begin training
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
-        epoch_val_error = 0
+        epoch_L2_error = 0
+        epoch_L2_mask_error = 0
         epoch_MSE_error = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
-                true_masks = batch['mask']
+                true_Ts = batch['mask']
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
                     f'but loaded images have {images.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
                 images = images.to(device=device, dtype=torch.float32)
-                true_masks = true_masks.to(device=device, dtype=torch.float32)
+                true_Ts = true_Ts.to(device=device, dtype=torch.float32)
 
                 with torch.cuda.amp.autocast(enabled=amp):
-                    masks_pred = net(images)
-                    loss = criterion(masks_pred, true_masks)
+                    Ts_pred = net(images)
+                    loss = criterion(Ts_pred, true_Ts)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -138,35 +140,47 @@ def train_net(net,
         # iterate over the validation set
         for batch in tqdm(val_loader, total=num_val_batches, desc='validation round', unit='batch',
                           leave=False):
-            batch_data, mask_true = batch['image'], batch['mask']
+            batch_data, T_true = batch['image'], batch['mask']
+
+            # Todo: 这里计算mask只考虑的batch=1的情况!
+            OH = batch_data[:, 0, :, :]
+            SVF = batch_data[:, 1, :, :]
+            mask = threshold_mask(OH) + threshold_mask(SVF)
+            mask[mask > 0] = 1
+
             # move images and labels to correct device and type
             batch_data = batch_data.to(device=device, dtype=torch.float32)
-            mask_true = mask_true.to(device=device, dtype=torch.float32)
+            T_true = T_true.to(device=device, dtype=torch.float32)
 
             with torch.no_grad():
-                # predict the mask
-                mask_pred = net(batch_data)
-                MSE_error = criterion(mask_pred, mask_true)
-                val_error = val_criterion(mask_pred, mask_true)
-            epoch_val_error += val_error.item() / num_val_batches  # average single error for each epoch
+                # predict the T
+                T_pred = net(batch_data)
+                MSE_error = criterion(T_pred, T_true)
+                L2_error_temp = L2_criterion(T_pred, T_true, reduct='none')
+                L2_error = L2_error_temp.mean()
+                L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()
+            epoch_L2_error += L2_error.item() / num_val_batches  # average single error for each epoch
+            epoch_L2_mask_error += L2_mask_error.item() / num_val_batches  # average single masked error for each epoch
             epoch_MSE_error += MSE_error.item() / num_val_batches  # average single error for each epoch
 
         net.train()
 
-        global_error[epoch + 1] = epoch_val_error
-        logging.info('Relative L2 Error: {}'.format(epoch_val_error))
-        logging.info('Validation MSE: {}'.format(epoch_MSE_error))
+        global_L2_error[epoch + 1] = epoch_L2_error
+        logging.info('Rel_L2 Error: {}'.format(epoch_L2_error))
+        logging.info('masked Rel_L2 Error: {}'.format(epoch_L2_mask_error))
+        logging.info('MSE Error: {}'.format(epoch_MSE_error))
         logging.info('Epoch Loss: {}'.format(epoch_loss))
-        logging.info('Current Minimum Val Error: {}, in epoch {}'.format(min(global_error.values()),
-                                                                         min(global_error, key=global_error.get)))
+        logging.info('Current Minimum L2 Error: {}, in epoch {}'.format(min(global_L2_error.values()),
+                                                                        min(global_L2_error, key=global_L2_error.get)))
         experiment.log({
             'learning rate': optimizer.param_groups[0]['lr'],
-            'validation Error': epoch_val_error,
+            'validation L2': epoch_L2_error,
+            'validation masked L2': epoch_L2_mask_error,
             'validation MSE': epoch_MSE_error,
             # 'images': wandb.Image(images[0].cpu()),
             # 'masks': {
-            #     'true': wandb.Image(true_masks[0].float().cpu()),
-            #     'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0].float().cpu()),
+            #     'true': wandb.Image(true_Ts[0].float().cpu()),
+            #     'pred': wandb.Image(torch.softmax(Ts_pred, dim=1)[0].float().cpu()),
             # },
             'step': global_step,
             'epoch': epoch + 1,

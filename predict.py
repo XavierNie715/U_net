@@ -6,14 +6,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from PIL import Image
-from torchvision import transforms
 
 from scipy import ndimage
 
 from utils.data_loading import BasicDataset
 from unet import UNet, RelativeL2Error
-from utils.utils import plot_img_and_mask
+from utils.utils import threshold_mask
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -107,7 +105,7 @@ if __name__ == '__main__':
 
     net = UNet(n_channels=2, n_classes=1, bilinear=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    val_criterion = RelativeL2Error()
+    L2_criterion = RelativeL2Error()
     MSE_criterion = nn.MSELoss()
 
     logging.info(f'Loading model {args.model}')
@@ -119,27 +117,36 @@ if __name__ == '__main__':
     logging.info('Model loaded!')
 
     img_num = 1
-    val_error_total = 0
+    L2_error_total = 0
     MSE_error_total = 0
     RMSE_error_total = 0
+    L2_error_mask_total = 0
 
     for filename in os.listdir(in_files):
         logging.info(f'\nProcessing image {img_num} / {len(os.listdir(in_files))} ...')
+        data = np.load(in_files + filename)
 
-        img = torch.from_numpy(np.load(in_files + filename))
+        OH = data[:, :, 0]
+        SVF = data[:, :, 1]
+        T = data[:, :, 3]
+
+        mask = threshold_mask(OH) + threshold_mask(SVF)
+        mask[mask > 0] = 1
+
+        img = torch.from_numpy(data)
         img = img.to(device=device, dtype=torch.float32)
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
-        mask_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
+        T_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
         InstanceNorm = nn.InstanceNorm2d(1)
-        mask_true_std = InstanceNorm(mask_true).cpu().numpy()
-        mask_true_gs_std = ndimage.filters.gaussian_filter(mask_true_std.reshape([img.shape[0],
-                                                                                  img.shape[1],
-                                                                                  1]),
-                                                           sigma=20)
+        T_true_std = InstanceNorm(T_true).cpu().numpy()
+        T_true_gs_std = ndimage.filters.gaussian_filter(T_true_std.reshape([img.shape[0],
+                                                                            img.shape[1],
+                                                                            1]),
+                                                        sigma=20)
 
         net.eval()
         with torch.no_grad():
-            mask = net(input_data).cpu().numpy()
+            T_pred = net(input_data).cpu().numpy()
 
         # print('mask: ', torch.from_numpy(mask).to(device).size())
         # print('mask_true_gs_std: ', torch.from_numpy(mask_true_gs_std).to(device).size())
@@ -147,40 +154,45 @@ if __name__ == '__main__':
         OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
         SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
 
-        val_error_plot = val_criterion(torch.from_numpy(mask).to(device),
-                                       torch.from_numpy(mask_true_gs_std).to(device).reshape(1, -1,
-                                                                                             mask.shape[2],
-                                                                                             mask.shape[3]),
-                                       reduct='none')
-        val_error = val_error_plot.mean()
-        MSE_error = MSE_criterion(torch.from_numpy(mask).to(device),
-                                  torch.from_numpy(mask_true_gs_std).to(device).reshape(1, -1,
-                                                                                        mask.shape[2],
-                                                                                        mask.shape[3]), )
+        L2_error_plot = L2_criterion(torch.from_numpy(T_pred).to(device),
+                                     torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
+                                                                                         T_pred.shape[2],
+                                                                                         T_pred.shape[3]),
+                                     reduct='none')
+        L2_error = L2_error_plot.mean()
+        L2_mask_error = (L2_error_plot * torch.tensor(mask)).mean()
+        MSE_error = MSE_criterion(torch.from_numpy(T_pred).to(device),
+                                  torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
+                                                                                     T_pred.shape[2],
+                                                                                     T_pred.shape[3]), )
         RMSE_error = MSE_error.sqrt()
 
-        val_error_total += val_error.item()
+        L2_error_total += L2_error.item()
         MSE_error_total += MSE_error.item()
         RMSE_error_total += RMSE_error.item()
+        L2_error_mask_total += L2_mask_error.item()
 
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
         # np.save(sv_name + '.npy', mask)
 
         logging.info(f'\n{filename} saved!\n'
-                     f'Rel_L2_error = {val_error}\n'
+                     f'Rel_L2_error = {L2_error}\n'
                      f'MSE_error = {MSE_error}\n'
-                     f'RMSE_error = {RMSE_error}')
+                     f'RMSE_error = {RMSE_error}\n'
+                     f'Rel_L2_mask_error = {L2_mask_error}')
 
         if args.no_plot == False:
-            plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_name)
+            plot_and_save(OH_std, SVF_std, T_pred, T_true_gs_std, L2_error_plot, sv_name)
 
         img_num += 1
 
-    val_error_total_mean = val_error_total / len(os.listdir(in_files))
+    L2_error_total_mean = L2_error_total / len(os.listdir(in_files))
     MSE_error_total_mean = MSE_error_total / len(os.listdir(in_files))
     RMSE_error_total_mean = RMSE_error_total / len(os.listdir(in_files))
+    L2_error_mask_total_mean = L2_error_mask_total / len(os.listdir(in_files))
 
     logging.info(f'\nFinish predict!\n'
-                 f'mean_L2_error = {val_error_total_mean}\n'
+                 f'mean_L2_error = {L2_error_total_mean}\n'
                  f'mean_MSE_error = {MSE_error_total_mean}\n'
-                 f'mean_RMSE_error = {RMSE_error_total_mean}')
+                 f'mean_RMSE_error = {RMSE_error_total_mean}\n'
+                 f'mean_L2_error_mask = {L2_error_total_mean}')
