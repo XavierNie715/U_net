@@ -160,7 +160,7 @@ if __name__ == '__main__':
                                                                                          T_pred.shape[3]),
                                      reduct='none')
         L2_error = L2_error_plot.mean()
-        L2_mask_error = (L2_error_plot * torch.tensor(mask)).mean()
+        L2_mask_error = (L2_error_plot * torch.tensor(mask).to(device)).mean()
         MSE_error = MSE_criterion(torch.from_numpy(T_pred).to(device),
                                   torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
                                                                                      T_pred.shape[2],
