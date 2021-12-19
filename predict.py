@@ -52,7 +52,7 @@ def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_na
     ax[4].set_title('L2_error')
     ax[4].set_yticks([])
     ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
-                       cmap=cm.jets)
+                       cmap=cm.jet)
 
     fig.colorbar(ax4, ax=ax[4])
     # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
