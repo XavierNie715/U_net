@@ -30,7 +30,7 @@ def get_args():
 
 
 def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_name):
-    fig, ax = plt.subplots(1, 5)
+    fig, ax = plt.subplots(1, 5, figsize=(10, 5))
     ax = ax.flatten()
 
     ax[0].set_title('OH')
@@ -52,7 +52,7 @@ def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_na
     ax[4].set_title('L2_error')
     ax[4].set_yticks([])
     ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
-                       cmap=cm.Reds)
+                       cmap=cm.jets)
 
     fig.colorbar(ax4, ax=ax[4])
     # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
@@ -156,8 +156,8 @@ if __name__ == '__main__':
 
         L2_error_plot = L2_criterion(torch.from_numpy(T_pred).to(device),
                                      torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
-                                                                                         T_pred.shape[2],
-                                                                                         T_pred.shape[3]),
+                                                                                        T_pred.shape[2],
+                                                                                        T_pred.shape[3]),
                                      reduct='none')
         L2_error = L2_error_plot.mean()
         L2_mask_error = (L2_error_plot * torch.tensor(mask).to(device)).mean()
