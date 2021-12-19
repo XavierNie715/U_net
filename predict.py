@@ -173,7 +173,7 @@ if __name__ == '__main__':
         L2_error_mask_total += L2_mask_error.item()
 
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
-        # np.save(sv_name + '.npy', mask)
+        np.save(sv_name + '.npy', T_pred)
 
         logging.info(f'\n{filename} saved!\n'
                      f'Rel_L2_error = {L2_error}\n'
