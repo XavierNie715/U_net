@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from scipy import ndimage
 
 from utils.data_loading import BasicDataset
-from unet import UNet, RelativeL2Error
-from utils.utils import threshold_mask
+from unet import UNet
+from utils.utils import threshold_mask, RelativeL2Error
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -118,9 +118,11 @@ if __name__ == '__main__':
 
     img_num = 1
     L2_error_total = 0
-    MSE_error_total = 0
-    RMSE_error_total = 0
     L2_error_mask_total = 0
+    MSE_error_total = 0
+    MSE_error_mask_total = 0
+    RMSE_error_total = 0
+    RMSE_error_mask_total = 0
 
     for filename in os.listdir(in_files):
         logging.info(f'\nProcessing image {img_num} / {len(os.listdir(in_files))} ...')
@@ -165,21 +167,31 @@ if __name__ == '__main__':
                                   torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
                                                                                      T_pred.shape[2],
                                                                                      T_pred.shape[3]), )
+        MSE_mask_error = MSE_criterion(torch.from_numpy(T_pred).to(device) * torch.tensor(mask).to(device),
+                                       torch.from_numpy(T_true_gs_std).to(device) * torch.tensor(mask).to(device)
+                                       .reshape(1, -1,
+                                                T_pred.shape[2],
+                                                T_pred.shape[3]), )
         RMSE_error = MSE_error.sqrt()
+        RMSE_mask_error = MSE_mask_error.sqrt()
 
         L2_error_total += L2_error.item()
-        MSE_error_total += MSE_error.item()
-        RMSE_error_total += RMSE_error.item()
         L2_error_mask_total += L2_mask_error.item()
+        MSE_error_total += MSE_error.item()
+        MSE_error_mask_total += MSE_mask_error.item()
+        RMSE_error_total += RMSE_error.item()
+        RMSE_error_mask_total += RMSE_mask_error.item()
 
         sv_name = out_dir + '/' + filename.split('/')[-1].split('.')[0]
         np.save(sv_name + '.npy', T_pred)
 
         logging.info(f'\n{filename} saved!\n'
                      f'Rel_L2_error = {L2_error}\n'
+                     f'Rel_L2_mask_error = {L2_mask_error}\n'
                      f'MSE_error = {MSE_error}\n'
+                     f'MSE_mask_error = {MSE_mask_error}\n'
                      f'RMSE_error = {RMSE_error}\n'
-                     f'Rel_L2_mask_error = {L2_mask_error}')
+                     f'RMSE_mask_error = {RMSE_mask_error}')
 
         if args.no_plot == False:
             plot_and_save(OH_std, SVF_std, T_pred, T_true_gs_std, L2_error_plot, sv_name)
@@ -187,12 +199,16 @@ if __name__ == '__main__':
         img_num += 1
 
     L2_error_total_mean = L2_error_total / len(os.listdir(in_files))
-    MSE_error_total_mean = MSE_error_total / len(os.listdir(in_files))
-    RMSE_error_total_mean = RMSE_error_total / len(os.listdir(in_files))
     L2_error_mask_total_mean = L2_error_mask_total / len(os.listdir(in_files))
+    MSE_error_total_mean = MSE_error_total / len(os.listdir(in_files))
+    MSE_error_mask_total_mean = MSE_error_mask_total / len(os.listdir(in_files))
+    RMSE_error_total_mean = RMSE_error_total / len(os.listdir(in_files))
+    RMSE_error_mask_total_mean = RMSE_error_mask_total / len(os.listdir(in_files))
 
     logging.info(f'\nFinish predict!\n'
                  f'mean_L2_error = {L2_error_total_mean}\n'
+                 f'mean_L2_mask_error = {L2_error_mask_total_mean}\n'
                  f'mean_MSE_error = {MSE_error_total_mean}\n'
+                 f'mean_MSE_mask_error = {MSE_error_mask_total_mean}\n'
                  f'mean_RMSE_error = {RMSE_error_total_mean}\n'
-                 f'mean_L2_error_mask = {L2_error_mask_total_mean}')
+                 f'mean_RMSE_error = {RMSE_error_mask_total_mean}')

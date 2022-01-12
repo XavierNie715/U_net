@@ -99,7 +99,7 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         name = self.ids[idx]
-        data = torch.as_tensor(np.load(name))
+        data = torch.as_tensor(np.load(name)).to(device=device, dtype=torch.float32)
         T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113

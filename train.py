@@ -13,8 +13,8 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
-from utils.utils import threshold_mask
-from unet import UNet, RelativeL2Error
+from utils.utils import threshold_mask, RelativeL2Error
+from unet import UNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 # os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
@@ -145,7 +145,7 @@ def train_net(net,
             # Todo: 这里计算mask只考虑的batch=1的情况!
             OH = batch_data[:, 0, :, :]
             SVF = batch_data[:, 1, :, :]
-            mask = threshold_mask(OH) + threshold_mask(SVF)
+            mask = threshold_mask(OH.cpu().numpy()) + threshold_mask(SVF.cpu().numpy())
             mask[mask > 0] = 1
 
             # move images and labels to correct device and type
