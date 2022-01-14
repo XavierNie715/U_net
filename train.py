@@ -39,7 +39,7 @@ def train_net(net,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
               img_scale: float = 0.5,
-              amp: bool = False, ):
+              amp: bool = False):
     # 1. Create dataset
     # try:
     #     dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
