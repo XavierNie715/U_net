@@ -134,6 +134,7 @@ if __name__ == '__main__':
 
         mask = threshold_mask(OH) + threshold_mask(SVF)
         mask[mask > 0] = 1
+        mask = torch.tensor(mask).to(device)
 
         img = torch.from_numpy(data)
         img = img.to(device=device, dtype=torch.float32)
@@ -162,16 +163,14 @@ if __name__ == '__main__':
                                                                                         T_pred.shape[3]),
                                      reduct='none')
         L2_error = L2_error_plot.mean()
-        L2_mask_error = (L2_error_plot * torch.tensor(mask).to(device)).mean()
+        L2_mask_error = (L2_error_plot * mask).mean()
         MSE_error = MSE_criterion(torch.from_numpy(T_pred).to(device),
                                   torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
                                                                                      T_pred.shape[2],
                                                                                      T_pred.shape[3]), )
-        MSE_mask_error = MSE_criterion(torch.from_numpy(T_pred).to(device) * torch.tensor(mask).to(device),
-                                       torch.from_numpy(T_true_gs_std).to(device) * torch.tensor(mask).to(device)
-                                       .reshape(1, -1,
-                                                T_pred.shape[2],
-                                                T_pred.shape[3]), )
+        MSE_mask_error = MSE_criterion(torch.from_numpy(T_pred).to(device) * mask,
+                                       torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1, T_pred.shape[2], T_pred.shape[3]) * mask)
+
         RMSE_error = MSE_error.sqrt()
         RMSE_mask_error = MSE_mask_error.sqrt()
 
