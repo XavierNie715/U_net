@@ -210,4 +210,4 @@ if __name__ == '__main__':
                  f'mean_MSE_error = {MSE_error_total_mean}\n'
                  f'mean_MSE_mask_error = {MSE_error_mask_total_mean}\n'
                  f'mean_RMSE_error = {RMSE_error_total_mean}\n'
-                 f'mean_RMSE_error = {RMSE_error_mask_total_mean}')
+                 f'mean_RMSE_mask_error = {RMSE_error_mask_total_mean}')
