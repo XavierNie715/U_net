@@ -116,7 +116,7 @@ def train_net(net,
 
                 pbar.update(images.shape[0])
                 global_step += 1
-                epoch_loss += loss.item()
+                epoch_loss += loss.item() / len(train_loader)
                 experiment.log({
                     'train loss': loss.item(),
                     'step': global_step,
