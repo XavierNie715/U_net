@@ -39,7 +39,8 @@ def train_net(net,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
               img_scale: float = 0.5,
-              amp: bool = False):
+              amp: bool = False,
+              start_epoch = 0):
     # 1. Create dataset
     # try:
     #     dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
@@ -87,7 +88,7 @@ def train_net(net,
     global_L2_error = {}
 
     # 5. Begin training
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         net.train()
         epoch_loss = 0
         epoch_L2_error = 0
@@ -235,8 +236,10 @@ if __name__ == '__main__':
                  f'\t{net.n_classes} output channels (classes)\n'
                  f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
 
+    start_epoch = 0
     if args.load:
         net.load_state_dict(torch.load(args.load, map_location=device))
+        start_epoch = int(args.load.split('_')[-1].split('.')[0][5:])
         logging.info(f'Model loaded from {args.load}')
 
     net.to(device=device)
@@ -249,7 +252,8 @@ if __name__ == '__main__':
                   device=device,
                   img_scale=args.scale,
                   val_percent=args.val / 100,
-                  amp=args.amp
+                  amp=args.amp,
+                  start_epoch=start_epoch,
                   )
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
