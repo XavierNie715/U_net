@@ -99,7 +99,7 @@ if __name__ == '__main__':
     in_files = str(args.input)
     # print(in_files)
     sv_dir = os.path.dirname(args.model)
-    out_dir = sv_dir + '/results_' + args.model.split('.')[-2].split('_')[-1]
+    out_dir = sv_dir + '/real_temp_results_' + args.model.split('.')[-2].split('_')[-1]
     if os.path.exists(out_dir) == False:
         os.mkdir(out_dir)
 

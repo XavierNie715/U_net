@@ -136,16 +136,16 @@ if __name__ == '__main__':
         mask[mask > 0] = 1
         mask = torch.tensor(mask).to(device)
 
-        img = torch.from_numpy(data)
-        img = img.to(device=device, dtype=torch.float32)
+        T_true_gs = ndimage.filters.gaussian_filter(data[:, :, 3].reshape([img.shape[0],
+                                                                           img.shape[1],
+                                                                           1]),
+                                                    sigma=20)
+        img = torch.from_numpy(data).to(device=device, dtype=torch.float32)
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
-        T_true = img[:, :, 3].reshape(1, 1, img.shape[0], img.shape[1])
+
         InstanceNorm = nn.InstanceNorm2d(1)
-        T_true_std = InstanceNorm(T_true).cpu().numpy()
-        T_true_gs_std = ndimage.filters.gaussian_filter(T_true_std.reshape([img.shape[0],
-                                                                            img.shape[1],
-                                                                            1]),
-                                                        sigma=20)
+        T_true_gs_std = InstanceNorm(T_true_gs.reshape([1, -1, 789, 113])
+                                     .to(device))
 
         net.eval()
         with torch.no_grad():
@@ -158,18 +158,19 @@ if __name__ == '__main__':
         SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
 
         L2_error_plot = L2_criterion(torch.from_numpy(T_pred).to(device),
-                                     torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
-                                                                                        T_pred.shape[2],
-                                                                                        T_pred.shape[3]),
+                                     torch.from_numpy(T_true_gs_std).reshape(1, -1,
+                                                                             T_pred.shape[2],
+                                                                             T_pred.shape[3]),
                                      reduct='none')
         L2_error = L2_error_plot.mean()
         L2_mask_error = (L2_error_plot * mask).mean()
         MSE_error = MSE_criterion(torch.from_numpy(T_pred).to(device),
-                                  torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1,
-                                                                                     T_pred.shape[2],
-                                                                                     T_pred.shape[3]), )
+                                  torch.from_numpy(T_true_gs_std).reshape(1, -1,
+                                                                          T_pred.shape[2],
+                                                                          T_pred.shape[3]), )
         MSE_mask_error = MSE_criterion(torch.from_numpy(T_pred).to(device) * mask,
-                                       torch.from_numpy(T_true_gs_std).to(device).reshape(1, -1, T_pred.shape[2], T_pred.shape[3]) * mask)
+                                       torch.from_numpy(T_true_gs_std).reshape(1, -1, T_pred.shape[2],
+                                                                               T_pred.shape[3]) * mask)
 
         RMSE_error = MSE_error.sqrt()
         RMSE_mask_error = MSE_mask_error.sqrt()
