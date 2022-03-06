@@ -41,3 +41,16 @@ class RelativeL2Error(nn.Module):
 
     def forward(self, f, g, reduct='mean'):
         return F.mse_loss(f, g, reduction=reduct) / F.mse_loss(g, torch.mean(g))
+
+
+def temp_recover(temp_ori, temp_pred):
+    """
+    Recover temperature from standard deviation and mean.
+    """
+    temp_ori = temp_ori.reshape(1, -1, 789, 113)
+    std_ori = np.std(temp_ori)
+    mean_ori = np.mean(temp_ori)
+
+    temp_real = temp_pred * std_ori + mean_ori
+
+    return temp_real
