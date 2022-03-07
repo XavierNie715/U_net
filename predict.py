@@ -232,14 +232,14 @@ if __name__ == '__main__':
         PSNR_error_total_mean = PSNR_error_total / len(os.listdir(in_files))
         PSNR_error_mask_total_mean = PSNR_error_mask_total / len(os.listdir(in_files))
 
-        logging.info(f'\nFinish predict!\n'
-                     f'mean_L2_error = {L2_error_total_mean}\n'
-                     f'mean_L2_mask_error = {L2_error_mask_total_mean}\n'
-                     f'mean_MSE_error = {MSE_error_total_mean}\n'
-                     f'mean_MSE_mask_error = {MSE_error_mask_total_mean}\n'
-                     f'mean_RMSE_error = {RMSE_error_total_mean}\n'
-                     f'mean_RMSE_mask_error = {RMSE_error_mask_total_mean}\n'
-                     f'mean_SSIM_error = {SSIM_error_total_mean}\n'
-                     f'mean_SSIM_mask_error = {SSIM_error_mask_total_mean}\n'
-                     f'mean_PSNR_error = {PSNR_error_total_mean}\n'
-                     f'mean_PSNR_mask_error = {PSNR_error_mask_total_mean}\n')
+    logging.info(f'\nFinish predict!\n'
+                 f'mean_L2_error = {L2_error_total_mean}\n'
+                 f'mean_L2_mask_error = {L2_error_mask_total_mean}\n'
+                 f'mean_MSE_error = {MSE_error_total_mean}\n'
+                 f'mean_MSE_mask_error = {MSE_error_mask_total_mean}\n'
+                 f'mean_RMSE_error = {RMSE_error_total_mean}\n'
+                 f'mean_RMSE_mask_error = {RMSE_error_mask_total_mean}\n'
+                 f'mean_SSIM_error = {SSIM_error_total_mean}\n'
+                 f'mean_SSIM_mask_error = {SSIM_error_mask_total_mean}\n'
+                 f'mean_PSNR_error = {PSNR_error_total_mean}\n'
+                 f'mean_PSNR_mask_error = {PSNR_error_mask_total_mean}\n')

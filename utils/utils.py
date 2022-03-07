@@ -63,7 +63,6 @@ def cal_PSNR(mse, img_true):
 
 
 def cal_SSIM(img_pred, img_true):
-    assert len(img_pred.shape) == 2 and len(img_true.shape) == 2
     assert img_pred.shape == img_true.shape
     mu1 = img_pred.mean()
     mu2 = img_true.mean()
