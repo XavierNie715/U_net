@@ -110,7 +110,7 @@ class BasicDataset(Dataset):
                                                    sigma=20)
 
         return {
-            'image': data[:, :, :2].reshape(2, data.shape[2], data.shape[1]),  # only take ppd and SVF as input
+            'image': data[:, :, 1:3].reshape(2, data.shape[0], data.shape[1]),  # only take ppd and SVF as input
             'mask': T_gs_std.reshape(-1, data.shape[0], data.shape[1])  # T
         }
 
