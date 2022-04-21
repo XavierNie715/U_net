@@ -103,7 +103,7 @@ if __name__ == '__main__':
     if os.path.exists(out_dir) == False:
         os.mkdir(out_dir)
 
-    net = UNet(n_channels=2, n_classes=1, bilinear=False)
+    net = UNet(n_channels=3, n_classes=1, bilinear=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     L2_criterion = RelativeL2Error()
     MSE_criterion = nn.MSELoss()
