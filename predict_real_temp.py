@@ -29,63 +29,72 @@ def get_args():
     return parser.parse_args()
 
 
-def plot_and_save(OH_std, SVF_std, mask, mask_true_gs_std, val_error_plot, sv_name):
-    fig, ax = plt.subplots(1, 5, figsize=(10, 5))
+def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
+    fig, ax = plt.subplots(nrows=4, ncols=1, constrained_layout=True, dpi=300)
     ax = ax.flatten()
 
-    ax[0].set_title('OH')
-    ax0 = ax[0].imshow(np.squeeze(OH_std))
+    if filename.split('_')[0] == '220mm':
+        x_Lf = '0.67'
+        y_labels = ['251', '246', '241']
 
-    ax[1].set_title('SVF')
-    ax[1].set_yticks([])
-    ax1 = ax[1].imshow(np.squeeze(SVF_std))
+    elif filename.split('_')[0] == '245mm':
+        x_Lf = '0.77'
+        y_labels = ['286', '281', '276']
 
-    ax[2].set_title('GT')
-    ax[2].set_yticks([])
-    ax2 = ax[2].imshow(mask_true_gs_std.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0])
+    else:
+        x_Lf = '0.82'
+        y_labels = ['306', '301', '296']
 
-    ax[3].set_title('Pred')
-    ax[3].set_yticks([])
-    ax3 = ax[3].imshow(mask.reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cm.viridis)
-    fig.colorbar(ax3, ax=ax[3])
+    x_ticks = [55, 168, 281, 394, 507, 620, 733]
+    x_labels = ['-30', '-20', '-10', '0', '10', '20', '30']
+    y_ticks = [0, 56, 112]
 
-    ax[4].set_title('L2_error')
-    ax[4].set_yticks([])
-    ax4 = ax[4].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0],
-                       cmap=cm.jet)
+    fig.suptitle(filename.split('.')[0] + ' (x/Lf: ' + x_Lf + ')', fontsize=6, fontweight='bold')
 
-    fig.colorbar(ax4, ax=ax[4])
-    # plt.subplots_adjust(left=0.4, right=0.7, wspace=0.1) # for fig only have 2 plots
+    sub0 = ax[0].imshow(OH.T, cmap=cm.jet)
+    ax[0].set_title('OH', fontsize=8)
+    ax[0].set_xticks(ticks=x_ticks)
+    ax[0].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[0].set_yticks(ticks=y_ticks)
+    ax[0].set_yticklabels(labels=y_labels, fontsize=6)
+    sub0.set_clim(0, OH.max())
 
-    # ax[2].imshow(img.cpu().numpy()[:, :, 0], cmap=cm.gray)
-    # # ax3.set_title(f'Rel L2 error = {val_error.item()}')
-    # ax[2].imshow(img.cpu().numpy()[:, :, 1], cmap=cm.jet)
-    # ax3 = ax[2].imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], alpha=0.4)
-    # fig.colorbar(ax3)
+    sub1 = ax[1].imshow(SVF.T, cmap=cm.jet)
+    ax[1].set_title('SVF', fontsize=8)
+    ax[1].set_xticks(ticks=x_ticks)
+    ax[1].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[1].set_yticks(ticks=y_ticks)
+    ax[1].set_yticklabels(labels=y_labels, fontsize=6)
+    sub1.set_clim(0, SVF.max())
 
-    '''
-    trying to plot overlayed fig
+    sub2 = ax[2].imshow(T_pred.reshape([789, 113]).T, cmap=cm.jet)
+    ax[2].set_title('T (pred.)', fontsize=8)
+    ax[2].set_xticks(ticks=x_ticks)
+    ax[2].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[2].set_yticks(ticks=y_ticks)
+    ax[2].set_yticklabels(labels=y_labels, fontsize=6)
+    sub2.set_clim(500, 1950)
 
-    fig, ax = plt.subplots()
-    OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
-    SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+    sub3 = ax[3].imshow(T_true_gs.reshape([789, 113]).T, cmap=cm.jet)
+    ax[3].set_title('T (exp.)', fontsize=8)
+    ax[3].set_xlabel('r [mm]', fontsize=6)
+    ax[3].set_xticks(ticks=x_ticks)
+    ax[3].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[3].set_ylabel('x [mm]', fontsize=6)
+    ax[3].set_yticks(ticks=y_ticks)
+    ax[3].set_yticklabels(labels=y_labels, fontsize=6)
+    sub3.set_clim(500, 2000)
 
-    cmap1 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["black", "darkgreen"])
-    cmap2 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["black", "darkblue"])
-    cmap3 = matplotlib.colors.LinearSegmentedColormap.from_list("", ["white", "red"])
-    ax1 = ax.imshow(OH_std.reshape(img.shape[0], img.shape[1], -1), cmap=cmap1, interpolation='bilinear',
-                    vmin=0, vmax=1)
-    ax2 = ax.imshow(SVF_std.reshape(img.shape[0], img.shape[1], -1), cmap=cmap2, alpha=0.4,
-                    interpolation='bilinear', vmin=0, vmax=1)
-
-    # ax3 = ax.imshow(val_error_plot.cpu().numpy().reshape(mask.shape[2], mask.shape[3], -1)[:, :, 0], cmap=cmap3, alpha=0.4,
-    #           interpolation='bilinear')
-    # fig.colorbar(ax3)
-    '''
+    cb1 = fig.colorbar(sub1, ax=ax[:2], ticks=[0, SVF.max()])
+    cb1.set_ticklabels(['0', 'max'])
+    cb1.ax.tick_params(labelsize=6)
+    cb2 = fig.colorbar(sub3, ax=[ax[2], ax[3]])
+    cb2.set_ticks([500, 1000, 1500, 2000])
+    cb2.set_ticklabels(['500', '1000', '1500', '2000'])
+    cb2.ax.tick_params(labelsize=6)
 
     # plt.show()
-    plt.savefig(sv_name + '.png', figsize=(24, 8), dpi=300, bbox_inches='tight')
-
+    plt.savefig(sv_name + '.png', dpi=300)
     plt.close()
 
 
@@ -159,8 +168,8 @@ if __name__ == '__main__':
         # print('mask: ', torch.from_numpy(mask).to(device).size())
         # print('mask_true_gs_std: ', torch.from_numpy(mask_true_gs_std).to(device).size())
         InstanceNorm = nn.InstanceNorm2d(1)
-        OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
-        SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+        # OH_std = InstanceNorm(img[:, :, 0].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
+        # SVF_std = InstanceNorm(img[:, :, 1].reshape([1, 1, img.shape[0], img.shape[1]])).cpu().numpy()
 
         L2_error_plot = L2_criterion(torch.from_numpy(T_pred).to(device),
                                      torch.from_numpy(T_true_gs).to(device),
@@ -208,7 +217,7 @@ if __name__ == '__main__':
                      f'PSNR_mask_error = {PSNR_mask_error}\n')
 
         if args.no_plot == False:
-            plot_and_save(OH_std, SVF_std, T_pred, T_true_gs, L2_error_plot, sv_name)
+            plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name)
 
         img_num += 1
 
