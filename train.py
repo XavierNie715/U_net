@@ -25,8 +25,9 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
-
+# data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
+data_list = './data/234mm_RE15_YF25', './data/239mm_RE10_YF35', './data/239mm_RE15_YF35', \
+            './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35'
 torch.manual_seed(42)
 
 
@@ -40,7 +41,7 @@ def train_net(net,
               save_checkpoint: bool = True,
               img_scale: float = 0.5,
               amp: bool = False,
-              start_epoch = 0):
+              start_epoch=0):
     # 1. Create dataset
     # try:
     #     dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
