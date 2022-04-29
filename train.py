@@ -16,7 +16,7 @@ from utils.data_loading import BasicDataset
 from utils.utils import threshold_mask, RelativeL2Error
 from unet import UNet
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 # os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
 print(torch.cuda.is_available(), torch.cuda.device_count())
 for i in range(torch.cuda.device_count()):
@@ -27,7 +27,8 @@ os.environ["WANDB_MODE"] = "offline"
 # dir_mask = Path('./data/masks/')
 # data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
 data_list = './data/234mm_RE15_YF25', './data/239mm_RE10_YF35', './data/239mm_RE15_YF35', \
-            './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35'
+            './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35', \
+            './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
 torch.manual_seed(42)
 
 
