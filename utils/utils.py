@@ -15,17 +15,22 @@ def threshold_mask(data, threshold_value=0.2, radius=50):
     return mask
 
 
-def std_GS(data, GS=False):
+def std_GS(data, std=True):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    data = torch.from_numpy(data).to(device=device, dtype=torch.float32).reshape(1, -1, 789, 113)
-    InstanceNorm = nn.InstanceNorm2d(1)
-    data_std = InstanceNorm(data).cpu().numpy()
-    if GS == True:
-        data_gs_std = ndimage.filters.gaussian_filter(data_std.reshape([789, 113, 1]), sigma=20)
-        return data_gs_std
+    if std:
+        try:
+            data = torch.from_numpy(data).to(device=device, dtype=torch.float32).reshape(-1, 1, 789, 113)
+        except:
+            data = data.to(device=device, dtype=torch.float32).reshape(-1, 1, 789, 113)
+        InstanceNorm = nn.InstanceNorm2d(1)
+        data_std = InstanceNorm(data).cpu().numpy()
+        return ndimage.filters.gaussian_filter(data_std.reshape([789, 113, 1]), sigma=20)
     else:
-        return data_std
+        try:
+            data = data.cpu().numpy()
+        except:
+            pass
+        return ndimage.filters.gaussian_filter(data.reshape([789, 113, 1]), sigma=20)
 
 
 class RelativeL2Error(nn.Module):
@@ -47,9 +52,16 @@ def temp_recover(temp_ori, temp_pred):
     """
     Recover temperature from standard deviation and mean.
     """
-    temp_ori = temp_ori.reshape(1, -1, 789, 113)
-    std_ori = np.std(temp_ori)
-    mean_ori = np.mean(temp_ori)
+    try:
+        temp_ori = temp_ori.cpu().numpy()
+        temp_pred = temp_pred.cpu().numpy()
+    except:
+        pass
+    temp_ori = temp_ori.reshape(-1, 1, 789, 113)
+    temp_pred = temp_pred.reshape(-1, 1, 789, 113)
+
+    std_ori = np.std(temp_ori, axis=(2, 3))
+    mean_ori = np.mean(temp_ori, axis=(2, 3))
 
     temp_real = temp_pred * std_ori + mean_ori
 

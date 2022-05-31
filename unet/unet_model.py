@@ -38,3 +38,10 @@ class UNet(nn.Module):
         x = self.up5(x, x1)
         logits = self.outc(x)
         return logits
+
+# todo: 加一个测试网络参数对齐的功能
+if __name__ == '__main__':
+    unet = UNet(n_channels=2, n_classes=1)
+    x = torch.randn(1, 2, 789, 113)
+    y = ...
+    print(unet)

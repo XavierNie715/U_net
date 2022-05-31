@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
-from utils.utils import threshold_mask, RelativeL2Error
+from utils.utils import threshold_mask, RelativeL2Error, temp_recover, std_GS
 from unet import UNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -25,10 +25,10 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-# data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
-data_list = './data/234mm_RE15_YF25', './data/239mm_RE10_YF35', './data/239mm_RE15_YF35', \
-            './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35', \
-            './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
+data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
+# data_list = './data/234mm_RE15_YF25', './data/239mm_RE10_YF35', './data/239mm_RE15_YF35', \
+#             './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35', \
+#             './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
 torch.manual_seed(42)
 
 
@@ -40,15 +40,15 @@ def train_net(net,
               learning_rate: float = 0.001,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
-              img_scale: float = 0.5,
+              std: bool = True,
               amp: bool = False,
-              start_epoch=0):
+              start_epoch: int = 0):
     # 1. Create dataset
     # try:
     #     dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
     # except (AssertionError, RuntimeError):
     #     dataset = BasicDataset(dir_img, dir_mask, img_scale)
-    dataset = BasicDataset(data_dir)
+    dataset = BasicDataset(data_dir, std)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -63,18 +63,19 @@ def train_net(net,
     # (Initialize logging)
     experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', name=dir_checkpoint)
     experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-                                  val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
+                                  val_percent=val_percent, save_checkpoint=save_checkpoint, std=std,
                                   amp=amp))
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
+        Start epoch:     {start_epoch}
         Batch size:      {batch_size}
+        Standardization: {std}
         Learning rate:   {learning_rate}
         Training size:   {n_train}
         Validation size: {n_val}
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
-        Images scaling:  {img_scale}
         Mixed Precision: {amp}
     ''')
 
@@ -87,14 +88,15 @@ def train_net(net,
     # criterion = nn.SmoothL1Loss()
     L2_criterion = RelativeL2Error()
     global_step = 0
-    global_L2_error = {}
+    global_RMSE_error = {}
 
     # 5. Begin training
     for epoch in range(start_epoch, epochs):
         net.train()
         epoch_loss = 0
         epoch_L2_error = 0
-        epoch_L2_mask_error = 0
+        epoch_RMSE_error = 0
+        # epoch_L2_mask_error = 0
         epoch_MSE_error = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
@@ -145,11 +147,12 @@ def train_net(net,
                           leave=False):
             batch_data, T_true = batch['image'], batch['mask']
 
-            # Todo: 这里计算mask只考虑的batch=1的情况!
-            OH = batch_data[:, 0, :, :]
-            SVF = batch_data[:, 1, :, :]
-            mask = threshold_mask(OH.cpu().numpy()) + threshold_mask(SVF.cpu().numpy())
-            mask[mask > 0] = 1
+            # # calculate mask for eval
+            # # Todo: 这里计算mask只考虑的batch=1的情况!
+            # OH = batch_data[:, 0, :, :]
+            # SVF = batch_data[:, 1, :, :]
+            # mask = threshold_mask(OH.cpu().numpy()) + threshold_mask(SVF.cpu().numpy())
+            # mask[mask > 0] = 1
 
             # move images and labels to correct device and type
             batch_data = batch_data.to(device=device, dtype=torch.float32)
@@ -158,33 +161,41 @@ def train_net(net,
             with torch.no_grad():
                 # predict the T
                 T_pred = net(batch_data)
+                # recover = True
+                # if recover:
+                #     T_pred = temp_recover(T_true, T_pred)
+
                 MSE_error = criterion(T_pred, T_true)
                 L2_error_temp = L2_criterion(T_pred, T_true, reduct='none')
                 L2_error = L2_error_temp.mean()
-                L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()
+                # L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()
             epoch_L2_error += L2_error.item() / num_val_batches  # average single error for each epoch
-            epoch_L2_mask_error += L2_mask_error.item() / num_val_batches  # average single masked error for each epoch
-            epoch_MSE_error += MSE_error.item() / num_val_batches  # average single error for each epoch
+            epoch_RMSE_error += MSE_error.item().sqrt() / num_val_batches
+            # epoch_L2_mask_error += L2_mask_error.item() / num_val_batches
+            epoch_MSE_error += MSE_error.item() / num_val_batches
 
         net.train()
 
-        global_L2_error[epoch + 1] = epoch_L2_error
+        global_RMSE_error[epoch + 1] = epoch_RMSE_error
         logging.info('Rel_L2 Error: {}'.format(epoch_L2_error))
-        logging.info('masked Rel_L2 Error: {}'.format(epoch_L2_mask_error))
+        # logging.info('masked Rel_L2 Error: {}'.format(epoch_L2_mask_error))
         logging.info('MSE Error: {}'.format(epoch_MSE_error))
+        logging.info('RMSE Error: {}'.format(epoch_RMSE_error))
         logging.info('Epoch Loss: {}'.format(epoch_loss))
-        logging.info('Current Minimum L2 Error: {}, in epoch {}'.format(min(global_L2_error.values()),
-                                                                        min(global_L2_error, key=global_L2_error.get)))
+        logging.info('Current Minimum RMSE Error: {}, in epoch {}'.format(min(global_RMSE_error.values()),
+                                                                          min(global_RMSE_error,
+                                                                              key=global_RMSE_error.get)))
         experiment.log({
             'learning rate': optimizer.param_groups[0]['lr'],
             'validation L2': epoch_L2_error,
-            'validation masked L2': epoch_L2_mask_error,
+            # 'validation masked L2': epoch_L2_mask_error,
             'validation MSE': epoch_MSE_error,
+            'validation RMSE': epoch_RMSE_error,
             # 'images': wandb.Image(images[0].cpu()),
-            # 'masks': {
-            #     'true': wandb.Image(true_Ts[0].float().cpu()),
-            #     'pred': wandb.Image(torch.softmax(Ts_pred, dim=1)[0].float().cpu()),
-            # },
+            'masks': {
+                'true': wandb.Image(T_true[0].float().cpu()),
+                'pred': wandb.Image(T_pred[0].float().cpu()),
+            },
             'step': global_step,
             'epoch': epoch + 1,
             **histograms
@@ -203,7 +214,7 @@ def get_args():
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=0.00001,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
+    parser.add_argument('--std', '-s', type=bool, default=True, help='Whether standardize the data')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
@@ -252,7 +263,7 @@ if __name__ == '__main__':
                   batch_size=args.batch_size,
                   learning_rate=args.lr,
                   device=device,
-                  img_scale=args.scale,
+                  std=args.std,
                   val_percent=args.val / 100,
                   amp=args.amp,
                   start_epoch=start_epoch,

@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
+from utils.utils import std_GS
 
 from scipy import ndimage
 
@@ -28,9 +29,8 @@ class BasicDataset(Dataset):
         logging.info(f'Creating dataset with {len(self.ids)} examples')
     '''
 
-    def __init__(self, data_dir: str, scale: float = 1.0):  # eg. input: './data/220mm, ./data/245mm'
-        assert 0 < scale <= 1, 'Scale must be between 0 and 1'
-        self.scale = scale
+    def __init__(self, data_dir: str, std: bool = True):  # eg. input: './data/220mm, ./data/245mm'
+        self.std = std
 
         self.ids = []
         for file_dir in data_dir.split(','):
@@ -99,19 +99,20 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         name = self.ids[idx]
         data = torch.as_tensor(np.load(name))
-        T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])
+        T = data[:, :, 3]
+        T = std_GS(T, self.std)
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
-        InstanceNorm = nn.InstanceNorm2d(1)
-        T_std = InstanceNorm(T).cpu().numpy()
-        T_gs_std = ndimage.filters.gaussian_filter(T_std.reshape([data.shape[0],
-                                                                  data.shape[1],
-                                                                  1]),
-                                                   sigma=20)
+        # InstanceNorm = nn.InstanceNorm2d(1)
+        # T_std = InstanceNorm(T).cpu().numpy()
+        # T_gs_std = ndimage.filters.gaussian_filter(T_std.reshape([data.shape[0],
+        #                                                           data.shape[1],
+        #                                                           1]),
+        #                                            sigma=20)
 
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': T_gs_std.reshape(-1, data.shape[0], data.shape[1])  # T
+            'mask': T.reshape(-1, data.shape[0], data.shape[1])  # T
         }
 
         # class CarvanaDataset(BasicDataset):
