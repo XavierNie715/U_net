@@ -89,13 +89,13 @@ class OutConv(nn.Module):
         super(OutConv, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.activate = nn.SELU(inplace=True)
-        self.linear = nn.Linear(..., ...)
+        # self.linear = nn.Linear(..., ...)
 
     def forward(self, x):
         H, W = x.size()[-2], x.size()[-1]
-        self.linear = nn.Linear(H * W, H * W)
+        linear = nn.Linear(H * W, H * W)
 
         x = self.activate(self.conv(x))
         x = x.view(x.size()[0], -1)
-        x = self.linear(x)
+        x = linear(x)
         return self.x.view(x.size()[0], 1, H, W)
