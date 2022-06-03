@@ -84,8 +84,8 @@ def train_net(net,
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
-    # criterion = nn.MSELoss()
-    criterion = NormMSELoss()
+    criterion_MSE = nn.MSELoss()
+    criterion_NormMSE = NormMSELoss()
     # criterion = nn.SmoothL1Loss()
     L2_criterion = RelativeL2Error()
     global_step = 0
@@ -114,7 +114,7 @@ def train_net(net,
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     Ts_pred = net(images)
-                    loss = criterion(Ts_pred, true_Ts)
+                    loss = criterion_NormMSE(Ts_pred, true_Ts)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -167,7 +167,7 @@ def train_net(net,
                 # if recover:
                 #     T_pred = temp_recover(T_true, T_pred)
 
-                MSE_error = criterion(T_pred, T_true)
+                MSE_error = criterion_MSE(T_pred, T_true)
                 L2_error_temp = L2_criterion(T_pred, T_true, reduct='none')
                 L2_error = L2_error_temp.mean()
                 # L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()

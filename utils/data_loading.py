@@ -103,13 +103,6 @@ class BasicDataset(Dataset):
         T = std_GS(T, self.std)
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
-        # InstanceNorm = nn.InstanceNorm2d(1)
-        # T_std = InstanceNorm(T).cpu().numpy()
-        # T_gs_std = ndimage.filters.gaussian_filter(T_std.reshape([data.shape[0],
-        #                                                           data.shape[1],
-        #                                                           1]),
-        #                                            sigma=20)
-
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
             'mask': T.reshape(-1, data.shape[0], data.shape[1])  # T
