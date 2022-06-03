@@ -39,6 +39,7 @@ class UNet(nn.Module):
         logits = self.outc(x)
         return logits
 
+
 # todo: 加一个测试网络参数对齐的功能
 if __name__ == '__main__':
     unet = UNet(n_channels=2, n_classes=1)

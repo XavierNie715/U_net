@@ -111,6 +111,8 @@ def train_net(net,
                 true_Ts = true_Ts.to(device=device, dtype=torch.float32)
 
                 with torch.cuda.amp.autocast(enabled=amp):
+                    print('model', next(net.parameters()).device)
+                    print('x', images.device)
                     Ts_pred = net(images)
                     loss = criterion(Ts_pred, true_Ts)
 
