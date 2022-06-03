@@ -77,6 +77,7 @@ def train_net(net,
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
         Mixed Precision: {amp}
+        IN in dataloading
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
