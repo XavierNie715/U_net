@@ -166,7 +166,10 @@ def train_net(net,
                 T_pred = net(batch_data)
                 recover = True
                 if recover:
-                    T_pred = temp_recover(T_ori, T_pred).to(device=device, dtype=torch.float32)
+                    # T_pred = temp_recover(T_ori, T_pred).to(device=device, dtype=torch.float32)
+                    for x in range(batch_size):
+                        T_pred[x] = temp_recover(T_ori[x], T_pred[x])
+                        T_pred = T_pred.to(device=device, dtype=torch.float32)
 
                 MSE_error = criterion_MSE(T_pred, T_ori)
                 L2_error_temp = L2_criterion(T_pred, T_ori, reduct='none')
