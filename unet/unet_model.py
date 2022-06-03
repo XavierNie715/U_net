@@ -9,6 +9,7 @@ class UNet(nn.Module):
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
+        self.instancenorm = nn.InstanceNorm2d(n_channels, affine=True)
 
         self.inc = DoubleConv(n_channels, 8)
         self.down1 = Down(8, 16)

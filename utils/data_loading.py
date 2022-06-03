@@ -102,9 +102,10 @@ class BasicDataset(Dataset):
         T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
-        InstanceNorm = nn.InstanceNorm2d(1)
-        T_std = InstanceNorm(T).cpu().numpy()
-        data_input = InstanceNorm(data[:, :, :2].reshape(1, -1, data.shape[0], data.shape[1])).cpu().numpy()
+        InstanceNorm1 = nn.InstanceNorm2d(1)
+        InstanceNorm2 = nn.InstanceNorm2d(2)
+        T_std = InstanceNorm1(T).cpu().numpy()
+        data_input = InstanceNorm2(data[:, :, :2].reshape(1, -1, data.shape[0], data.shape[1])).cpu().numpy()
 
         return {
             'image': data_input.reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
