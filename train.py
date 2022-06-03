@@ -114,7 +114,7 @@ def train_net(net,
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     Ts_pred = net(images)
-                    loss = criterion_NormMSE(Ts_pred, true_Ts)
+                    loss = criterion_MSE(Ts_pred, true_Ts)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()

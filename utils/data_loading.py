@@ -99,13 +99,16 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         name = self.ids[idx]
         data = torch.as_tensor(np.load(name))
-        T = data[:, :, 3]
-        T = std_GS(T, self.std)
+        T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
+        InstanceNorm = nn.InstanceNorm2d(1)
+        T_std = InstanceNorm(T).cpu().numpy()
+        data_input = InstanceNorm(data[:, :, :2].reshape(1, -1, data.shape[0], data.shape[1])).cpu().numpy()
+
         return {
-            'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': T.reshape(-1, data.shape[0], data.shape[1])  # T
+            'image': data_input.reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
+            'mask': T_std.reshape(-1, data.shape[0], data.shape[1])  # T
         }
 
         # class CarvanaDataset(BasicDataset):
