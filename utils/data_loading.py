@@ -109,7 +109,8 @@ class BasicDataset(Dataset):
 
         return {
             'image': data_input.reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': T_std.reshape(-1, data.shape[0], data.shape[1])  # T
+            'mask': T_std.reshape(-1, data.shape[0], data.shape[1]),  # T
+            'real_temp': T.reshape(-1, data.shape[0], data.shape[1])
         }
 
         # class CarvanaDataset(BasicDataset):

@@ -11,7 +11,8 @@ import wandb
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-
+import numpy as np
+from matplotlib import pyplot as plt
 from utils.data_loading import BasicDataset
 from utils.utils import threshold_mask, RelativeL2Error, temp_recover, std_GS, NormMSELoss
 from unet import UNet
@@ -77,7 +78,6 @@ def train_net(net,
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
         Mixed Precision: {amp}
-        IN in dataloading
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
@@ -148,7 +148,7 @@ def train_net(net,
         # iterate over the validation set
         for batch in tqdm(val_loader, total=num_val_batches, desc='validation round', unit='batch',
                           leave=False):
-            batch_data, T_true = batch['image'], batch['mask']
+            batch_data, T_true, T_ori = batch['image'], batch['mask'], batch['real_temp']
 
             # # calculate mask for eval
             # # Todo: 这里计算mask只考虑的batch=1的情况!
@@ -159,17 +159,17 @@ def train_net(net,
 
             # move images and labels to correct device and type
             batch_data = batch_data.to(device=device, dtype=torch.float32)
-            T_true = T_true.to(device=device, dtype=torch.float32)
+            # T_true = T_true.to(device=device, dtype=torch.float32)
 
             with torch.no_grad():
                 # predict the T
                 T_pred = net(batch_data)
-                # recover = True
-                # if recover:
-                #     T_pred = temp_recover(T_true, T_pred)
+                recover = True
+                if recover:
+                    T_pred = temp_recover(T_ori, T_pred).to(device=device, dtype=torch.float32)
 
-                MSE_error = criterion_MSE(T_pred, T_true)
-                L2_error_temp = L2_criterion(T_pred, T_true, reduct='none')
+                MSE_error = criterion_MSE(T_pred, T_ori)
+                L2_error_temp = L2_criterion(T_pred, T_ori, reduct='none')
                 L2_error = L2_error_temp.mean()
                 # L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()
             epoch_L2_error += L2_error.item() / num_val_batches  # average single error for each epoch
@@ -196,7 +196,7 @@ def train_net(net,
             'validation RMSE': epoch_RMSE_error,
             # 'images': wandb.Image(images[0].cpu()),
             'masks': {
-                'true': wandb.Image(T_true[0].float().cpu()),
+                'true': wandb.Image(T_ori[0].float().cpu()),
                 'pred': wandb.Image(T_pred[0].float().cpu()),
             },
             'step': global_step,
