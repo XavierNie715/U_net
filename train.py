@@ -214,7 +214,8 @@ def get_args():
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=0.00001,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--std', '-s', type=bool, default=True, help='Whether standardize the data')
+    # parser.add_argument('--std', '-s', type=bool, default=True, help='Whether standardize the data')
+    parser.add_argument('--std', '-s', action='store_true', help='Whether standardize the data')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
@@ -229,7 +230,6 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-
     # dataset_split = args.data_set.split(',')
     data_dir = []
     data_dir.extend([(data_list[int(item) - 1]) for item in args.data_set])
