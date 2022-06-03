@@ -170,7 +170,7 @@ def train_net(net,
                 L2_error = L2_error_temp.mean()
                 # L2_mask_error = (L2_error_temp * torch.tensor(mask).to(device=device)).mean()
             epoch_L2_error += L2_error.item() / num_val_batches  # average single error for each epoch
-            epoch_RMSE_error += MSE_error.item().sqrt() / num_val_batches
+            epoch_RMSE_error += MSE_error.sqrt().item() / num_val_batches
             # epoch_L2_mask_error += L2_mask_error.item() / num_val_batches
             epoch_MSE_error += MSE_error.item() / num_val_batches
 
