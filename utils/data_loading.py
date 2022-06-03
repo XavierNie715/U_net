@@ -99,18 +99,17 @@ class BasicDataset(Dataset):
     def __getitem__(self, idx):
         name = self.ids[idx]
         data = torch.as_tensor(np.load(name))
-        T = data[:, :, 3].reshape(1, -1, data.shape[0], data.shape[1])
+        T = data[:, :, 3].reshape(data.shape[0], data.shape[1], 1)
+        T_gs = ndimage.filters.gaussian_filter(T, sigma=20)
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
-        InstanceNorm1 = nn.InstanceNorm2d(1)
-        InstanceNorm2 = nn.InstanceNorm2d(2)
-        T_std = InstanceNorm1(T).cpu().numpy()
-        data_input = InstanceNorm2(data[:, :, :2].reshape(1, -1, data.shape[0], data.shape[1])).cpu().numpy()
+        InstanceNorm = nn.InstanceNorm2d(1)
+        T_gs_std = InstanceNorm(T_gs.reshape(-1, 1, data.shape[0], data.shape[1])).cpu().numpy()
 
         return {
-            'image': data_input.reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
-            'mask': T_std.reshape(-1, data.shape[0], data.shape[1]),  # T
-            'real_temp': T.reshape(-1, data.shape[0], data.shape[1])
+            'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
+            'mask': T_gs_std.reshape(-1, data.shape[0], data.shape[1]),  # T
+            'real_temp': T_gs.reshape(-1, data.shape[0], data.shape[1])
         }
 
         # class CarvanaDataset(BasicDataset):
