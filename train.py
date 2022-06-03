@@ -168,7 +168,8 @@ def train_net(net,
                 if recover:
                     # T_pred = temp_recover(T_ori, T_pred).to(device=device, dtype=torch.float32)
                     for x in range(batch_size):
-                        T_temp = temp_recover(T_ori[x], T_pred[x]).to(device=device, dtype=torch.float32)
+                        T_temp = torch.as_tensor(temp_recover(T_ori[x], T_pred[x])).to(device=device,
+                                                                                       dtype=torch.float32)
                         T_pred[x] = T_temp
 
                 MSE_error = criterion_MSE(T_pred, T_ori)
