@@ -94,11 +94,11 @@ class OutConv(nn.Module):
     def forward(self, x):
         H, W = x.size()[-2], x.size()[-1]
         linear = nn.Linear(H * W, H * W)
-
+        try:
+            linear = linear.cuda()
+        except:
+            pass
         x = self.activate(self.conv(x))
-        print('Is x in cuda1: ', x.is_cuda)
         x = x.view(x.size()[0], -1)
-        print('Is x in cuda2: ', x.is_cuda)
         x = linear(x)
-        print('Is x in cuda3: ', x.is_cuda)
         return self.x.view(x.size()[0], 1, H, W)
