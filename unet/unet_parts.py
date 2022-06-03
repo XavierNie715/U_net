@@ -96,6 +96,9 @@ class OutConv(nn.Module):
         linear = nn.Linear(H * W, H * W)
 
         x = self.activate(self.conv(x))
+        print('Is x in cuda1: ', x.is_cuda)
         x = x.view(x.size()[0], -1)
+        print('Is x in cuda2: ', x.is_cuda)
         x = linear(x)
+        print('Is x in cuda3: ', x.is_cuda)
         return self.x.view(x.size()[0], 1, H, W)
