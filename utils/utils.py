@@ -48,6 +48,19 @@ class RelativeL2Error(nn.Module):
         return F.mse_loss(f, g, reduction=reduct) / F.mse_loss(g, torch.mean(g))
 
 
+class NormMSELoss(nn.Module):
+    """
+    Calculate MSE between normalized result and ground truth
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, f, g, reduct='mean'):
+        InstanceNorm = nn.InstanceNorm2d(1)
+        return F.mse_loss(InstanceNorm(f), InstanceNorm(g), reduction=reduct)
+
+
 def temp_recover(temp_ori, temp_pred):
     """
     Recover temperature from standard deviation and mean.

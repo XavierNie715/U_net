@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
-from utils.utils import threshold_mask, RelativeL2Error, temp_recover, std_GS
+from utils.utils import threshold_mask, RelativeL2Error, temp_recover, std_GS, NormMSELoss
 from unet import UNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -85,6 +85,7 @@ def train_net(net,
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
+    # criterion = NormMSELoss()
     # criterion = nn.SmoothL1Loss()
     L2_criterion = RelativeL2Error()
     global_step = 0
@@ -92,6 +93,7 @@ def train_net(net,
 
     # 5. Begin training
     for epoch in range(start_epoch, epochs):
+        torch.cuda.empty_cache()
         net.train()
         epoch_loss = 0
         epoch_L2_error = 0
