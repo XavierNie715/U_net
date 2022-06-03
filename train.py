@@ -84,8 +84,8 @@ def train_net(net,
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # criterion = nn.CrossEntropyLoss()
-    criterion = nn.MSELoss()
-    # criterion = NormMSELoss()
+    # criterion = nn.MSELoss()
+    criterion = NormMSELoss()
     # criterion = nn.SmoothL1Loss()
     L2_criterion = RelativeL2Error()
     global_step = 0
