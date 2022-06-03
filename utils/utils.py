@@ -16,12 +16,12 @@ def threshold_mask(data, threshold_value=0.2, radius=50):
 
 
 def std_GS(data, std=True):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # device = cuda会引起多线程的报错
     if std:
         try:
-            data = torch.from_numpy(data).to(device=device, dtype=torch.float32).reshape(-1, 1, 789, 113)
+            data = torch.from_numpy(data).to(device='cpu', dtype=torch.float32).reshape(-1, 1, 789, 113)
         except:
-            data = data.to(device=device, dtype=torch.float32).reshape(-1, 1, 789, 113)
+            data = data.to(device='cpu', dtype=torch.float32).reshape(-1, 1, 789, 113)
         InstanceNorm = nn.InstanceNorm2d(1)
         data_std = InstanceNorm(data).cpu().numpy()
         return ndimage.filters.gaussian_filter(data_std.reshape([789, 113, 1]), sigma=20)
