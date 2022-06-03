@@ -159,6 +159,7 @@ def train_net(net,
 
             # move images and labels to correct device and type
             batch_data = batch_data.to(device=device, dtype=torch.float32)
+            T_ori = T_ori.to(device=device, dtype=torch.float32)
             # T_true = T_true.to(device=device, dtype=torch.float32)
 
             with torch.no_grad():
