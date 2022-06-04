@@ -30,7 +30,7 @@ def get_args():
 
 
 def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
-    fig, ax = plt.subplots(nrows=4, ncols=1, constrained_layout=True, dpi=300)
+    fig, ax = plt.subplots(nrows=5, ncols=1, constrained_layout=True, dpi=300)
     ax = ax.flatten()
 
     if filename.split('_')[0] == '220mm':
@@ -73,7 +73,7 @@ def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
     ax[2].set_xticklabels(labels=x_labels, fontsize=6)
     ax[2].set_yticks(ticks=y_ticks)
     ax[2].set_yticklabels(labels=y_labels, fontsize=6)
-    sub2.set_clim(500, 1950)
+    sub2.set_clim(500, 2000)
 
     sub3 = ax[3].imshow(T_true_gs.reshape([789, 113]).T, cmap=cm.jet)
     ax[3].set_title('T (exp.)', fontsize=8)
@@ -92,6 +92,11 @@ def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
     cb2.set_ticks([500, 1000, 1500, 2000])
     cb2.set_ticklabels(['500', '1000', '1500', '2000'])
     cb2.ax.tick_params(labelsize=6)
+
+    x = np.linspace(1, 789, 789)
+    sub4 = ax[4].plot(x, T_pred.reshape([789, 113]).T[55, :], 'r-', label='T (pred.)')
+    sub5 = ax[4].plot(x, T_true_gs.reshape([789, 113]).T[55, :], 'b-', label='T (exp.)')
+    plt.legend()
 
     # plt.show()
     plt.savefig(sv_name + '.png', dpi=300)
@@ -159,11 +164,12 @@ if __name__ == '__main__':
         T_true_gs = ndimage.filters.gaussian_filter(T.reshape([img.shape[0],
                                                                img.shape[1],
                                                                1]),
+                                                    mode='nearest',
                                                     sigma=20).reshape([1, 1, img.shape[0], img.shape[1]])
 
         net.eval()
         with torch.no_grad():
-            T_pred = temp_recover(T_true_gs, net(input_data).cpu().numpy())
+            T_pred = temp_recover(T, net(input_data).cpu().numpy())
 
         # print('mask: ', torch.from_numpy(mask).to(device).size())
         # print('mask_true_gs_std: ', torch.from_numpy(mask_true_gs_std).to(device).size())
