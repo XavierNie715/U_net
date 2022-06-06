@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
         OH = data[:, :, 0]
         SVF = data[:, :, 1]
-        T = data[:, :, 3]
+        T = data[:, :, 3].reshape(-1, 1, data.shape[0], data.shape[1])
 
         mask = threshold_mask(OH) + threshold_mask(SVF)
         mask[mask > 0] = 1
