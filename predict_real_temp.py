@@ -30,7 +30,8 @@ def get_args():
 
 
 def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
-    fig, ax = plt.subplots(nrows=5, ncols=1, constrained_layout=True, dpi=300)
+    fig, ax = plt.subplots(nrows=5, ncols=1, constrained_layout=True, gridspec_kw={'height_ratios': [1, 1, 1, 1, 2]},
+                           dpi=300)
     ax = ax.flatten()
 
     if filename.split('_')[0] == '220mm':
@@ -96,6 +97,7 @@ def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
     x = np.linspace(1, 789, 789)
     sub4 = ax[4].plot(x, T_pred.reshape([789, 113]).T[55, :], 'r-', label='T (pred.)')
     sub5 = ax[4].plot(x, T_true_gs.reshape([789, 113]).T[55, :], 'b-', label='T (exp.)')
+    ax[4].set_ylime(500, 2500)
     plt.legend()
 
     # plt.show()
