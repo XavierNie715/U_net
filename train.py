@@ -26,7 +26,9 @@ os.environ["WANDB_MODE"] = "offline"
 
 # dir_img = Path('./data/imgs/')
 # dir_mask = Path('./data/masks/')
-data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
+data_list = './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2', \
+            './data/239mm_RE10_YF35', './data/270mm_RE10_YF35', './data/239mm_RE15_YF35', './data/270mm_RE15_YF35'
+
 # data_list = './data/234mm_RE15_YF25', './data/239mm_RE10_YF35', './data/239mm_RE15_YF35', \
 #             './data/260mm_RE15_YF25', './data/270mm_RE10_YF35', './data/270mm_RE15_YF35', \
 #             './data/220mm', './data/245mm', './data/275mm_1', './data/275mm_2'
@@ -200,10 +202,10 @@ def train_net(net,
             'validation MSE': epoch_MSE_error,
             'validation RMSE': epoch_RMSE_error,
             # 'images': wandb.Image(images[0].cpu()),
-            'masks': {
-                'true': wandb.Image(T_ori[0].float().cpu()),
-                'pred': wandb.Image(T_pred[0].float().cpu()),
-            },
+            # 'masks': {
+            #     'true': wandb.Image(T_ori[0].float().cpu()),
+            #     'pred': wandb.Image(T_pred[0].float().cpu()),
+            # },
             'step': global_step,
             'epoch': epoch + 1,
             **histograms

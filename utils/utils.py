@@ -15,6 +15,12 @@ def threshold_mask(data, threshold_value=0.2, radius=50):
     return mask
 
 
+def threshold_temp(data, threshold_value: int = 800):
+    mask = np.ones(data.shape)
+    mask[data < threshold_value] = 0
+    return mask
+
+
 def std_GS(data, std=True):
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # device = cuda会引起多线程的报错
     if std:
