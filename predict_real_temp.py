@@ -11,7 +11,7 @@ from scipy import ndimage
 
 from utils.data_loading import BasicDataset
 from unet import UNet
-from utils.utils import threshold_mask, RelativeL2Error, cal_SSIM, cal_PSNR, temp_recover, threshold_temp
+from utils.utils import threshold_mask, cal_PSNR, temp_recover, threshold_temp
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -29,9 +29,8 @@ def get_args():
 
 
 def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
-    fig, ax = plt.subplots(nrows=5, ncols=1, constrained_layout=True, figsize=(9, 10),
-                           gridspec_kw={'height_ratios': [1, 1, 1, 1, 2]},
-                           dpi=300)
+    fig, ax = plt.subplots(nrows=6, ncols=1, constrained_layout=True, dpi=300, figsize=(9, 10),
+                           gridspec_kw={'height_ratios': [1, 1, 1, 1, 1, 2]})
     ax = ax.flatten()
 
     if filename.split('_')[0] == '220mm':
@@ -42,51 +41,79 @@ def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
         x_Lf = '0.77'
         y_labels = ['286', '281', '276']
 
-    else:
+    elif filename.split('_')[0] == '275mm':
         x_Lf = '0.82'
         y_labels = ['306', '301', '296']
+
+    elif filename.split('_')[0] == '239mm':
+        x_Lf = '0.66'
+        y_labels = ['270', '265', '260']
+
+    elif filename.split('_')[0] == '270mm':
+        x_Lf = '0.75'
+        y_labels = ['301', '296', '291']
 
     x_ticks = [55, 168, 281, 394, 507, 620, 733]
     x_labels = ['-30', '-20', '-10', '0', '10', '20', '30']
     y_ticks = [0, 56, 112]
 
-    fig.suptitle(filename.split('.')[0] + ' (x/Lf: ' + x_Lf + ')', fontsize=10, fontweight='bold')
+    # fig.suptitle(filename.split('.')[0] + ' (x/Lf: ' + x_Lf + ')', fontsize=10, fontweight='bold')
+    fig.suptitle(filename.split('.')[0], fontsize=6, fontweight='bold')
 
+    # plt.subplot(4, 1, 1)
     sub0 = ax[0].imshow(OH.T, cmap=cm.jet)
     ax[0].set_title('OH', fontsize=8)
+    # ax[0].set_xlabel('r [mm]', fontsize=6)
     ax[0].set_xticks(ticks=x_ticks)
     ax[0].set_xticklabels(labels=x_labels, fontsize=6)
+    # ax[0].set_ylabel('x [mm]', fontsize=6)
     ax[0].set_yticks(ticks=y_ticks)
     ax[0].set_yticklabels(labels=y_labels, fontsize=6)
     sub0.set_clim(0, OH.max())
 
+    # plt.subplot(4, 1, 2)
     sub1 = ax[1].imshow(SVF.T, cmap=cm.jet)
     ax[1].set_title('SVF', fontsize=8)
+    # ax[1].set_xlabel('r [mm]', fontsize=6)
     ax[1].set_xticks(ticks=x_ticks)
     ax[1].set_xticklabels(labels=x_labels, fontsize=6)
+    # ax[1].set_ylabel('x [mm]', fontsize=6)
     ax[1].set_yticks(ticks=y_ticks)
     ax[1].set_yticklabels(labels=y_labels, fontsize=6)
     sub1.set_clim(0, SVF.max())
 
-    sub2 = ax[2].imshow(T_pred.reshape([789, 113]).T, cmap=cm.jet)
-    ax[2].set_title('T (pred.)', fontsize=8)
+    # plt.subplot(4, 1, 3)
+    sub2 = ax[2].imshow(T_true_gs.T, cmap=cm.jet)
+    ax[2].set_title('T (exp.)', fontsize=8)
+    # ax[2].set_xlabel('r [mm]', fontsize=6)
     ax[2].set_xticks(ticks=x_ticks)
     ax[2].set_xticklabels(labels=x_labels, fontsize=6)
+    # ax[2].set_ylabel('x [mm]', fontsize=6)
     ax[2].set_yticks(ticks=y_ticks)
     ax[2].set_yticklabels(labels=y_labels, fontsize=6)
-    # sub2.set_clim(800, 2200)
-    sub2.set_clim(500, 2000)
+    sub2.set_clim(500, 1950)
 
-    sub3 = ax[3].imshow(T_true_gs.reshape([789, 113]).T, cmap=cm.jet)
-    ax[3].set_title('T (exp.)', fontsize=8)
+    # plt.subplot(4, 1, 4)
+    sub3 = ax[3].imshow(T_pred.T, cmap=cm.jet)
+    ax[3].set_title('T (pred.)', fontsize=8)
     ax[3].set_xlabel('r [mm]', fontsize=6)
     ax[3].set_xticks(ticks=x_ticks)
     ax[3].set_xticklabels(labels=x_labels, fontsize=6)
     ax[3].set_ylabel('x [mm]', fontsize=6)
     ax[3].set_yticks(ticks=y_ticks)
     ax[3].set_yticklabels(labels=y_labels, fontsize=6)
-    # sub3.set_clim(800, 2200)
     sub3.set_clim(500, 2000)
+
+    # plt.subplot(4, 1, 5)
+    sub4 = ax[4].imshow(T_pred.T - T_true_gs.T, cmap=cm.RdBu_r)
+    ax[4].set_title('Deviation', fontsize=8)
+    ax[4].set_xlabel('r [mm]', fontsize=6)
+    ax[4].set_xticks(ticks=x_ticks)
+    ax[4].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[4].set_ylabel('x [mm]', fontsize=6)
+    ax[4].set_yticks(ticks=y_ticks)
+    ax[4].set_yticklabels(labels=y_labels, fontsize=6)
+    sub4.set_clim(-200, 200)
 
     cb1 = fig.colorbar(sub1, ax=ax[:2], ticks=[0, SVF.max()])
     cb1.set_ticklabels(['0', 'max'])
@@ -95,29 +122,31 @@ def plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name):
     cb2.set_ticks([500, 1000, 1500, 2000])
     cb2.set_ticklabels(['500', '1000', '1500', '2000'])
     cb2.ax.tick_params(labelsize=6)
+    cb3 = fig.colorbar(sub4, ax=ax[4], shrink=2, aspect=10)
+    cb3.set_ticks([-200, -100, -50, 0, 50, 100, 200])
+    cb3.set_ticklabels(['-200', '-100', '-50', '0', '50', '100', '200'])
+    cb3.ax.tick_params(labelsize=6)
 
     x = np.linspace(1, 789, 789)
-    ax[4].plot(x, T_true_gs.reshape([789, 113]).T[55, :], 'r-', label='T (exp.)')
-    ax[4].plot(x[::20], T_pred.reshape([789, 113]).T[55, :][::20], 'b--x', ms=4, label='T (pred.)')
-    ax[4].set_aspect('auto')
-    ax[4].set_ylim(800, 2200)
-    ax[4].set_xlabel('r [mm]', fontsize=6)
-    ax[4].set_xticks(ticks=x_ticks)
-    ax[4].set_xticklabels(labels=x_labels, fontsize=6)
-    ax[4].set_ylabel('T [K]', fontsize=6)
-    ax[4].tick_params(labelsize=6)
-    # ax[4].set_aspect('auto')
-    # ax[4].set_box_aspect(ax[3].get_box_aspect())
-    # plt.legend(fontsize=6)
+    ax[5].plot(x, T_true_gs.reshape([789, 113]).T[55, :], 'r-', label='T (exp.)')
+    ax[5].plot(x[::20], T_pred.reshape([789, 113]).T[55, :][::20], 'b--x', ms=4, label='T (pred.)')
+    ax[5].set_aspect('auto')
+    ax[5].set_ylim(1000, 2200)
+    ax[5].set_xlabel('r [mm]', fontsize=6)
+    ax[5].set_xticks(ticks=x_ticks)
+    ax[5].set_xticklabels(labels=x_labels, fontsize=6)
+    ax[5].set_ylabel('T [K]', fontsize=6)
+    ax[5].tick_params(labelsize=6)
 
     ax[0].set_aspect('auto')
     ax[1].set_aspect('auto')
     ax[2].set_aspect('auto')
     ax[3].set_aspect('auto')
     ax[4].set_aspect('auto')
+    ax[5].set_aspect('auto')
 
-    plt.show()
-    # plt.savefig(sv_name + '.eps', dpi=300)
+    # plt.show()
+    plt.savefig(sv_name + '.jpg', dpi=300)
     plt.close()
 
 
@@ -128,7 +157,7 @@ CUDA_VISIBLE_DEVICES=1 srun -p gpu_v100 -w node9 python predict.py --model /publ
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
-    in_files = str(args.input) + '/'
+    in_files = str(args.input)
     # print(in_files)
     sv_dir = os.path.dirname(args.model)
     out_dir = sv_dir + '/real_temp_results_' + args.model.split('.')[-2].split('_')[-1]
@@ -137,9 +166,8 @@ if __name__ == '__main__':
 
     net = UNet(n_channels=2, n_classes=1, bilinear=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    L1_criterion = nn.L1Loss(reduction='none')
-    L2_criterion = RelativeL2Error()
     MSE_criterion = nn.MSELoss()
+    l1_criterion = nn.L1Loss(reduction='none')
 
     logging.info(f'Loading model {args.model}')
     logging.info(f'Using device {device}')
@@ -150,8 +178,6 @@ if __name__ == '__main__':
     logging.info('Model loaded!')
 
     img_num = 1
-    L2_error_total = 0
-    L2_error_mask_total = 0
 
     MSE_error_total = 0
     MSE_error_mask_total = 0
@@ -159,21 +185,16 @@ if __name__ == '__main__':
     RMSE_error_total = 0
     RMSE_error_mask_total = 0
 
-    # L1 loss for temperature only calculate >800K!
-    L1_error_mean = 0
-    L1_error_mean_total = 0
-    L1_error_std = 0
-    L1_error_std_total = 0
-    Rel_L1_error = 0
-    Rel_L1_error_total = 0
+    rel_l1_error_total = 0
+    rel_l1_error_mask_total = 0
 
-    SSIM_error_total = 0
-    SSIM_error_mask_total = 0
+    error_mean_total = 0
+    error_std_total = 0
 
     PSNR_error_total = 0
     PSNR_error_mask_total = 0
 
-    global_L1_error_mean = {}
+    global_error_std = {}
 
     for filename in os.listdir(in_files):
         logging.info(f'\nProcessing image {img_num} / {len(os.listdir(in_files))} ...')
@@ -182,19 +203,17 @@ if __name__ == '__main__':
         OH = data[:, :, 0]
         SVF = data[:, :, 1]
         T = data[:, :, 3].reshape(-1, 1, data.shape[0], data.shape[1])
+        T_true_gs = ndimage.filters.gaussian_filter(T.reshape([data.shape[0],
+                                                               data.shape[1],
+                                                               1]),
+                                                    mode='nearest',
+                                                    sigma=20).reshape([1, 1, data.shape[0], data.shape[1]])
 
-        mask = threshold_mask(OH) + threshold_mask(SVF)
-        mask[mask > 0] = 1
-        mask = torch.tensor(mask).to(device)
+        mask = threshold_temp(T_true_gs)
 
         img = torch.from_numpy(data)
         img = img.to(device=device, dtype=torch.float32)
         input_data = img[:, :, :2].reshape(1, 2, img.shape[0], img.shape[1])
-        T_true_gs = ndimage.filters.gaussian_filter(T.reshape([img.shape[0],
-                                                               img.shape[1],
-                                                               1]),
-                                                    mode='nearest',
-                                                    sigma=20).reshape([1, 1, img.shape[0], img.shape[1]])
 
         net.eval()
         with torch.no_grad():
@@ -210,20 +229,6 @@ if __name__ == '__main__':
         T_true_tensor = torch.from_numpy(T_true_gs).to(device)
 
         temp_mask = torch.tensor(threshold_temp(T_true_tensor.cpu().numpy())).to(device)
-        L1_error = L1_criterion(T_pred_tensor * temp_mask, T_true_tensor * temp_mask)
-        L1_error_mean = L1_error.mean().item()
-        L1_error_std = L1_error.std().item()
-        Rel_L1_error = (L1_error.cpu().numpy() / T_true_gs).mean()
-        L1_error_mean_total += L1_error_mean
-        L1_error_std_total += L1_error_std
-        Rel_L1_error_total += Rel_L1_error
-        global_L1_error_mean[filename] = L1_error_mean
-
-        L2_error_plot = L2_criterion(T_pred_tensor, T_true_tensor, reduct='none')
-        L2_error = L2_error_plot.mean()
-        L2_mask_error = (L2_error_plot * mask).mean()
-        L2_error_total += L2_error.item()
-        L2_error_mask_total += L2_mask_error.item()
 
         MSE_error = MSE_criterion(T_pred_tensor, T_true_tensor)
         MSE_mask_error = MSE_criterion(T_pred_tensor * mask, T_true_tensor * mask)
@@ -235,10 +240,21 @@ if __name__ == '__main__':
         RMSE_error_total += RMSE_error.item()
         RMSE_error_mask_total += RMSE_mask_error.item()
 
-        SSIM_error = cal_SSIM(T_pred, T_true_gs)
-        SSIM_mask_error = cal_SSIM(T_pred * mask.cpu().numpy(), T_true_gs * mask.cpu().numpy())
-        SSIM_error_total += SSIM_error.item()
-        SSIM_error_mask_total += SSIM_mask_error.item()
+        l1_error = l1_criterion(T_pred_tensor, T_true_tensor)
+        l1_mask_error = l1_criterion(T_pred_tensor * mask, T_true_tensor * mask)
+
+        rel_l1_error = l1_error / T_true_tensor
+        rel_l1_mask_error = l1_mask_error / T_true_tensor
+        rel_l1_error_total = torch.sum(rel_l1_error)
+        rel_l1_mask_error_total = torch.sum(rel_l1_mask_error)
+
+        error = T_pred_tensor - T_true_tensor
+        error_mask = error * mask
+        error_mean = torch.mean(error_mask)
+        error_mean_total = torch.sum(error_mean)
+        error_std = torch.std(error_mask)
+        global_error_std[filename] = error_std.item()
+        error_std_total = torch.sum(error_std)
 
         PSNR_error = cal_PSNR(MSE_error.item(), T_true_gs)
         PSNR_mask_error = cal_PSNR(MSE_mask_error.item(), T_true_gs)
@@ -249,54 +265,40 @@ if __name__ == '__main__':
         np.save(sv_name + '.npy', T_pred)
 
         logging.info(f'\n{filename} saved!\n'
-                     f'L1_error_mean = {L1_error_mean}\n'
-                     f'L1_error_std = {L1_error_std}\n'
-                     f'Rel_L1_error = {Rel_L1_error}\n'
-                     f'Rel_L2_error = {L2_error}\n'
-                     f'Rel_L2_mask_error = {L2_mask_error}\n'
-                     f'MSE_error = {MSE_error}\n'
-                     f'MSE_mask_error = {MSE_mask_error}\n'
+                     f'error_mean: {error_mean.item()}\n'
+                     f'error_std: {error_std.item()}\n'
                      f'RMSE_error = {RMSE_error}\n'
                      f'RMSE_mask_error = {RMSE_mask_error}\n'
-                     f'SSIM_error = {SSIM_error}\n'
-                     f'SSIM_mask_error = {SSIM_mask_error}\n'
+                     f'rel_l1_error = {rel_l1_error}\n'
+                     f'rel_l1_mask_error = {rel_l1_mask_error}\n'
                      f'PSNR_error = {PSNR_error}\n'
                      f'PSNR_mask_error = {PSNR_mask_error}\n')
 
-        if args.no_plot == False:
-            plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name)
+        # if args.no_plot == False:
+        plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name)
 
         img_num += 1
 
-        L1_error_mean_total_mean = L1_error_mean_total / len(os.listdir(in_files))
-        L1_error_std_total_mean = L1_error_std_total / len(os.listdir(in_files))
-        Rel_L1_error_total_mean = Rel_L1_error_total / len(os.listdir(in_files))
-        L2_error_total_mean = L2_error_total / len(os.listdir(in_files))
-        L2_error_mask_total_mean = L2_error_mask_total / len(os.listdir(in_files))
         MSE_error_total_mean = MSE_error_total / len(os.listdir(in_files))
         MSE_error_mask_total_mean = MSE_error_mask_total / len(os.listdir(in_files))
+        error_mean_total_mean = error_mean_total / len(os.listdir(in_files))
+        error_std_total_mean = error_std_total / len(os.listdir(in_files))
         RMSE_error_total_mean = RMSE_error_total / len(os.listdir(in_files))
         RMSE_error_mask_total_mean = RMSE_error_mask_total / len(os.listdir(in_files))
-        SSIM_error_total_mean = SSIM_error_total / len(os.listdir(in_files))
-        SSIM_error_mask_total_mean = SSIM_error_mask_total / len(os.listdir(in_files))
+        rel_l1_error_total_mean = rel_l1_error_total / len(os.listdir(in_files))
+        rel_l1_mask_error_total_mean = rel_l1_mask_error_total / len(os.listdir(in_files))
         PSNR_error_total_mean = PSNR_error_total / len(os.listdir(in_files))
         PSNR_error_mask_total_mean = PSNR_error_mask_total / len(os.listdir(in_files))
 
-    sorted_L1_list = sorted(global_L1_error_mean.items(), key=lambda x: x[1], reverse=True)
+    sorted_L1_list = sorted(global_error_std.items(), key=lambda x: x[1], reverse=True)
     for key, val in sorted_L1_list:
         logging.info(f'{key} : {val}')
 
     logging.info(f'\nFinish predict!\n'
-                 f'L1_error_mean_total_mean = {L1_error_mean_total_mean}\n'
-                 f'L1_error_std_total_mean = {L1_error_std_total_mean}\n'
-                 f'Rel_L1_error_total_mean = {Rel_L1_error_total_mean}\n'
-                 f'mean_L2_error = {L2_error_total_mean}\n'
-                 f'mean_L2_mask_error = {L2_error_mask_total_mean}\n'
-                 f'mean_MSE_error = {MSE_error_total_mean}\n'
-                 f'mean_MSE_mask_error = {MSE_error_mask_total_mean}\n'
+                 f'error_mean: {error_mean_total_mean}\n'
+                 f'error_std: {error_std_total_mean}\n'
                  f'mean_RMSE_error = {RMSE_error_total_mean}\n'
                  f'mean_RMSE_mask_error = {RMSE_error_mask_total_mean}\n'
-                 f'mean_SSIM_error = {SSIM_error_total_mean}\n'
-                 f'mean_SSIM_mask_error = {SSIM_error_mask_total_mean}\n'
+                 f'mean_rel_l1_error = {rel_l1_error_total_mean}\n'
                  f'mean_PSNR_error = {PSNR_error_total_mean}\n'
                  f'mean_PSNR_mask_error = {PSNR_error_mask_total_mean}\n')

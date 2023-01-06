@@ -104,7 +104,7 @@ class BasicDataset(Dataset):
         # N,C,H,W
         # data.shape[0]: 789, data.shape[1]: 113
         InstanceNorm = nn.InstanceNorm2d(1)
-        T_gs_std = InstanceNorm(T_gs.reshape(-1, 1, data.shape[0], data.shape[1])).cpu().numpy()
+        T_gs_std = InstanceNorm(torch.tensor(T_gs.reshape(-1, 1, data.shape[0], data.shape[1]))).cpu().numpy()
 
         return {
             'image': data[:, :, :2].reshape(2, data.shape[0], data.shape[1]),  # only take OH and SVF as input
