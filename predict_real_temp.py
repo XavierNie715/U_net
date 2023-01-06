@@ -251,10 +251,10 @@ if __name__ == '__main__':
         error = T_pred_tensor - T_true_tensor
         error_mask = error * temp_mask
         error_mean = torch.mean(error_mask)
-        error_mean_total = torch.sum(error_mean)
+        error_mean_total += error_mean.item()
         error_std = torch.std(error_mask)
         global_error_std[filename] = error_std.item()
-        error_std_total = torch.sum(error_std)
+        error_std_total += error_std.item()
 
         PSNR_error = cal_PSNR(MSE_error.item(), T_true_gs)
         PSNR_mask_error = cal_PSNR(MSE_mask_error.item(), T_true_gs)
