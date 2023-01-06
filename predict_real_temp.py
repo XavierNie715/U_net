@@ -231,7 +231,7 @@ if __name__ == '__main__':
         temp_mask = torch.tensor(threshold_temp(T_true_tensor.cpu().numpy())).to(device)
 
         MSE_error = MSE_criterion(T_pred_tensor, T_true_tensor)
-        MSE_mask_error = MSE_criterion(T_pred_tensor * mask, T_true_tensor * mask)
+        MSE_mask_error = MSE_criterion(T_pred_tensor * temp_mask, T_true_tensor * temp_mask)
         MSE_error_total += MSE_error.item()
         MSE_error_mask_total += MSE_mask_error.item()
 
@@ -241,7 +241,7 @@ if __name__ == '__main__':
         RMSE_error_mask_total += RMSE_mask_error.item()
 
         l1_error = l1_criterion(T_pred_tensor, T_true_tensor)
-        l1_mask_error = l1_criterion(T_pred_tensor * mask, T_true_tensor * mask)
+        l1_mask_error = l1_criterion(T_pred_tensor * temp_mask, T_true_tensor * temp_mask)
 
         rel_l1_error = l1_error / T_true_tensor
         rel_l1_mask_error = l1_mask_error / T_true_tensor
@@ -249,7 +249,7 @@ if __name__ == '__main__':
         rel_l1_mask_error_total = torch.sum(rel_l1_mask_error)
 
         error = T_pred_tensor - T_true_tensor
-        error_mask = error * mask
+        error_mask = error * temp_mask
         error_mean = torch.mean(error_mask)
         error_mean_total = torch.sum(error_mean)
         error_std = torch.std(error_mask)
