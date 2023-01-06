@@ -243,8 +243,8 @@ if __name__ == '__main__':
         l1_error = l1_criterion(T_pred_tensor, T_true_tensor)
         l1_mask_error = l1_criterion(T_pred_tensor * temp_mask, T_true_tensor * temp_mask)
 
-        rel_l1_error = l1_error / T_true_tensor
-        rel_l1_mask_error = l1_mask_error / T_true_tensor
+        rel_l1_error = torch.mean(l1_error / T_true_tensor)
+        rel_l1_mask_error = torch.mean(l1_mask_error / T_true_tensor)
         rel_l1_error_total = torch.sum(rel_l1_error)
         rel_l1_mask_error_total = torch.sum(rel_l1_mask_error)
 
@@ -275,7 +275,8 @@ if __name__ == '__main__':
                      f'PSNR_mask_error = {PSNR_mask_error}\n')
 
         # if args.no_plot == False:
-        plot_and_save(filename, OH, SVF, T_pred, T_true_gs, sv_name)
+        plot_and_save(filename, OH, SVF, T_pred.cpu().numpy().reshape(789, 113),
+                      T_true_gs.cpu().numpy().reshape(789, 113), sv_name)
 
         img_num += 1
 
