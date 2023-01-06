@@ -69,7 +69,7 @@ class NormMSELoss(nn.Module):
 
 def temp_recover(temp_ori, temp_pred):
     """
-    Recover temperature from standard deviation and mean.
+    Recover temperature(as np array) from standard deviation and mean.
     """
     try:
         temp_ori = temp_ori.cpu().numpy()

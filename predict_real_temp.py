@@ -275,7 +275,7 @@ if __name__ == '__main__':
                      f'PSNR_mask_error = {PSNR_mask_error}\n')
 
         # if args.no_plot == False:
-        plot_and_save(filename, OH, SVF, T_pred.cpu().numpy().reshape(789, 113),
+        plot_and_save(filename, OH, SVF, T_pred.reshape(789, 113),
                       T_true_gs.cpu().numpy().reshape(789, 113), sv_name)
 
         img_num += 1
