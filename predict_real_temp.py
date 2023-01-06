@@ -276,7 +276,7 @@ if __name__ == '__main__':
 
         # if args.no_plot == False:
         plot_and_save(filename, OH, SVF, T_pred.reshape(789, 113),
-                      T_true_gs.cpu().numpy().reshape(789, 113), sv_name)
+                      T_true_gs.cpu().reshape(789, 113), sv_name)
 
         img_num += 1
 
