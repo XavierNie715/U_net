@@ -1,6 +1,7 @@
 """ Full assembly of the parts to form the complete network """
 
 from .unet_parts import *
+from torchsummary import summary
 
 
 class UNet(nn.Module):
@@ -43,6 +44,7 @@ class UNet(nn.Module):
 # todo: 加一个测试网络参数对齐的功能
 if __name__ == '__main__':
     unet = UNet(n_channels=2, n_classes=1, bilinear=False)
-    # x = torch.randn(1, 2, 789, 113)
+    x = torch.randn(1, 2, 789, 113)
+    y = unet(x)
     # y = ...
-    print(unet)
+    # summary(unet, input_size=(2, 789, 113))

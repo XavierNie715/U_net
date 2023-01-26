@@ -217,7 +217,7 @@ if __name__ == '__main__':
 
         net.eval()
         with torch.no_grad():
-            T_pred = temp_recover(T, net(input_data).cpu().numpy())
+            T_pred = temp_recover(T_true_gs, net(input_data).cpu().numpy())
 
         # print('mask: ', torch.from_numpy(mask).to(device).size())
         # print('mask_true_gs_std: ', torch.from_numpy(mask_true_gs_std).to(device).size())
