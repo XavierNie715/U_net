@@ -241,7 +241,7 @@ class Pix2PixModel:
                 net = getattr(self, 'net' + name)
 
                 if torch.cuda.is_available() and self.device != 'cpu':
-                    torch.save(net.module.cpu().state_dict(), save_path)
+                    torch.save(net.cpu().state_dict(), save_path)
                     net.cuda()
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
