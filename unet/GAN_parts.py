@@ -158,7 +158,7 @@ class Pix2PixModel:
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=1e-5)
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=1e-5)
 
-    def set_input(self, input):
+    def set_input(self, input,):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
 
         Parameters:
@@ -166,8 +166,12 @@ class Pix2PixModel:
 
         The option 'direction' can be used to swap images in domain A and domain B.
         """
-        self.real_A = input['image'].to(self.device, dtype=torch.float32)
-        self.real_B = input['mask'].to(self.device, dtype=torch.float32)
+        is_train = self.isTrain
+        if is_train:
+            self.real_A = input['image'].to(self.device, dtype=torch.float32)
+            self.real_B = input['mask'].to(self.device, dtype=torch.float32)
+        else:
+            self.real_A = input
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
