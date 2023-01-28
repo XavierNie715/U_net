@@ -169,7 +169,7 @@ class Pix2PixModel:
         is_train = self.isTrain
         if is_train:
             self.real_A = input['image'].to(self.device, dtype=torch.float32)
-            self.real_B = input['mask'].to(self.device, dtype=torch.float32)
+            self.real_B = input['real_temp'].to(self.device, dtype=torch.float32)
         else:
             self.real_A = input
 
@@ -199,7 +199,7 @@ class Pix2PixModel:
         pred_fake = self.netD(fake_AB)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
-        lambda_L1 = 100
+        lambda_L1 = 1
         self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * lambda_L1
         # combine loss and calculate gradients
         self.loss_G = self.loss_G_GAN + self.loss_G_L1
