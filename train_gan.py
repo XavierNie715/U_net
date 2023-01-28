@@ -154,7 +154,6 @@ if __name__ == '__main__':
     logging.info(f'Using device {device}')
 
     # Change here to adapt to your data
-    # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
 
     Discriminator = NLayerDiscriminator().to(device)

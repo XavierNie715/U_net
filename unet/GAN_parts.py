@@ -227,6 +227,13 @@ class Pix2PixModel:
         self.backward_G()  # calculate graidents for G
         self.optimizer_G.step()  # update G's weights
 
+    def eval(self):
+        """Make models eval mode during test time"""
+        for name in self.model_names:
+            if isinstance(name, str):
+                net = getattr(self, 'net' + name)
+                net.eval()
+
     def save_networks(self, epoch, dir_checkpoint, ):
         """Save all the networks to the disk.
 
@@ -246,21 +253,21 @@ class Pix2PixModel:
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
 
-    def load_networks(self, epoch, dir_checkpoint):
+    def load_networks(self, epoch, run_name):
         """Load all the networks from the disk.
 
         Parameters:
             epoch (int) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
         """
-        dir_checkpoint = './checkpoints/' + dir_checkpoint
+
         for name in self.model_names:
             if isinstance(name, str):
                 load_filename = '%s_net_%s.pth' % (epoch, name)
-                load_path = os.path.join(dir_checkpoint, load_filename)
+                load_path = os.path.join(run_name, load_filename)
                 net = getattr(self, 'net' + name)
                 if isinstance(net, torch.nn.DataParallel):
                     net = net.module
-                print('loading the model from %s' % dir_checkpoint)
+                print('loading the model from %s' % run_name)
                 # if you are using PyTorch newer than 0.4 (e.g., built from
                 # GitHub source), you can remove str() on self.device
                 state_dict = torch.load(load_path, map_location=self.device)
